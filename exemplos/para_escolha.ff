@@ -1,0 +1,12 @@
+inteiro soma = 0;
+para i = 1 ate 5 faca {
+    soma = soma + i;
+}
+imprimir(soma);
+
+inteiro categoria = 2;
+escolha categoria {
+    caso 1: imprimir("baixo risco");
+    caso 2: imprimir("risco moderado");
+    padrao: imprimir("risco alto");
+}

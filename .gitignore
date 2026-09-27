@@ -8,6 +8,9 @@ env/
 # Jupyter
 .ipynb_checkpoints/
 
+# Testes
+.pytest_cache/
+
 # Parser/lexer generated tables (PLY)
 parser.out
 parsetab.py
