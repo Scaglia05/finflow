@@ -1,0 +1,11 @@
+moeda saldo = 1000.00;
+percentual taxa = 5%;
+moeda saldo_final = saldo + saldo * taxa;
+
+se saldo_final > 1000 entao {
+    imprimir("cresceu");
+} senao {
+    imprimir("nao cresceu");
+}
+
+imprimir(saldo_final);
