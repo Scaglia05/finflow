@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Parser/lexer generated tables (PLY)
+parser.out
+parsetab.py
+
+# OS
+.DS_Store
+Thumbs.db
