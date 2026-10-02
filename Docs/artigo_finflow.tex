@@ -1,0 +1,222 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{url}
+\usepackage{array}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  columns=flexible,
+  showstringspaces=false,
+  captionpos=b
+}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{FinFlow: uma DSL com Tipagem Dedicada para Prevenção\\
+de Erros de Unidade em Modelagem Financeira}
+
+\author{
+\IEEEauthorblockN{Guilherme Augusto Scaglia, João Pedro Denardo, Pedro Henrique Oliveira de Souza}
+\IEEEauthorblockA{Engenharia de Computação\\
+Fundação Hermínio Ometto (FHO)\\
+Araras, SP, Brasil\\
+\{scaglia, denardo749, pedro1204\}@alunos.fho.edu.br}
+}
+
+\maketitle
+
+\begin{abstract}
+Este trabalho apresenta a FinFlow, uma linguagem de domínio específico (DSL) para modelagem de operações financeiras, cujo sistema de tipos distingue nativamente grandezas de naturezas distintas -- \texttt{moeda}, \texttt{percentual}, \texttt{inteiro} e \texttt{texto} -- rejeitando, em tempo de análise semântica, composições aritméticas incoerentes entre elas (como a soma direta entre um valor monetário e uma taxa percentual). A hipótese central deste trabalho é a de que essa tipagem dedicada não constitui, isoladamente, o objetivo da pesquisa, mas sim o mecanismo viabilizador de uma ferramenta de cálculo financeiro capaz de operar sobre dados macroeconômicos reais -- séries da Selic e do IPCA, obtidas da API pública do Banco Central do Brasil -- sem exigir que o programador redeclare ou converta manualmente essas grandezas no código-fonte. O compilador, implementado em Python com a biblioteca PLY (Python Lex-Yacc), é estruturado nas quatro fases clássicas de tradução: análise léxica, análise sintática (gramática LALR(1) com 34 regras de produção e 83 estados, livre de conflitos), análise semântica (tabela de símbolos com verificação de tipos) e interpretação (execução direta sobre a árvore sintática abstrata). O mecanismo de injeção de variáveis pré-populadas que viabilizará a integração com o Banco Central já está implementado nas funções de análise semântica e de interpretação; a integração em si -- a busca de dados na API do SGS/BCB -- constitui a etapa em andamento do projeto, não coberta por este artigo.
+\end{abstract}
+
+\begin{IEEEkeywords}
+linguagem de domínio específico, DSL, compiladores, análise léxica, análise sintática, LALR(1), PLY, modelagem financeira, sistema de tipos
+\end{IEEEkeywords}
+
+\section{Introdução}
+
+Programas que lidam com valores financeiros -- saldos, taxas de juros, percentuais de rendimento, categorias de despesa -- são tipicamente escritos em linguagens de propósito geral (Python, Java, C\#), nas quais um valor monetário e uma taxa percentual são, do ponto de vista do compilador, apenas números de ponto flutuante. Essa indiferenciação de tipos abre espaço para uma classe específica e recorrente de erro: somar diretamente uma quantia em \texttt{moeda} com uma taxa em \texttt{percentual} (por exemplo, \texttt{saldo + taxa} em vez de \texttt{saldo + saldo * taxa}) é sintaticamente válido e numericamente executável, mas semanticamente incorreto -- e esse tipo de erro de unidade costuma só ser percebido quando o resultado produzido é absurdo, já em produção.
+
+A pergunta de pesquisa que orienta este trabalho não é, no entanto, ``um sistema de tipos pode distinguir \texttt{moeda} de \texttt{percentual}?'' -- essa resposta é imediata e resolvida já na análise semântica (Seção III-C). A questão mais relevante, que orienta a etapa em andamento do projeto, é: \textit{uma vez estabelecida essa distinção de grandezas na gramática e na análise semântica, até que ponto ela generaliza para a composição segura de dados financeiros vindos de fora do código-fonte -- como séries macroeconômicas reais -- sem exigir uma reformulação da linguagem?} Essa pergunta ganha relevância particular porque séries como a Selic e o IPCA, publicadas mensalmente pelo Banco Central, são justamente o tipo de dado que um programa financeiro precisa compor com segurança de tipos, mas que nenhum programador deveria ser obrigado a digitar manualmente no código-fonte.
+
+\subsection{Justificativa da Escolha do Domínio e das Técnicas}
+
+A escolha do domínio financeiro, em detrimento de outras aplicações possíveis para uma DSL com sistema de tipos dedicado, justifica-se por três razões. Em primeiro lugar, trata-se de um domínio no qual o erro de unidade (confundir uma grandeza monetária com uma taxa) é ao mesmo tempo comum e de baixa visibilidade sintática em linguagens de propósito geral, o que o torna um caso de uso representativo para demonstrar o valor de um sistema de tipos restrito ao domínio. Em segundo lugar, o domínio financeiro possui uma fonte pública, gratuita e sem autenticação de dados reais e continuamente atualizados -- o Sistema Gerenciador de Séries Temporais (SGS) do Banco Central --, o que permite avaliar a linguagem não apenas sobre programas de exemplo sintéticos, mas sobre dados macroeconômicos reais. Em terceiro lugar, o problema impõe uma restrição de escopo compatível com o prazo do projeto: diferentemente de um compilador de propósito geral, uma DSL financeira pode ser especificada com um conjunto pequeno e fechado de tipos primitivos (Seção III-B), sem abrir mão de cobrir os comandos de controle de fluxo (condicional, repetição, seleção múltipla) necessários para expressar regras de negócio não triviais.
+
+A escolha específica das técnicas -- análise ascendente LALR(1) e geração de parser via PLY, em vez de um parser descendente escrito manualmente -- segue o mesmo raciocínio de custo-benefício: um parser LALR(1) gerado automaticamente a partir da gramática (Seção III-B) permite alterar a gramática e reconstruir o analisador sintático sem reescrever lógica de descida recursiva à mão, o que se mostrou vantajoso durante o desenvolvimento iterativo da linguagem, inclusive para extensões futuras planejadas para a gramática.
+
+\textbf{Diferencial técnico:} diferentemente de bibliotecas de tipos monetários embarcadas em linguagens de propósito geral (como o módulo \texttt{decimal} do Python, ou tipos de dinheiro de bibliotecas de terceiros), que validam grandezas apenas em tempo de execução e apenas se o programador efetivamente utilizar o tipo especializado em vez do primitivo numérico, a FinFlow tratada aqui impõe a distinção de grandezas na própria gramática e a verifica estruturalmente na análise semântica, antes de qualquer execução -- e sem depender da disciplina do programador em preferir um tipo especializado a outro.
+
+\section{Fundamentação Teórica e Trabalhos Relacionados}
+
+A fundamentação deste trabalho apoia-se em uma revisão bibliográfica de seis trabalhos científicos, abrangendo duas frentes complementares: o arcabouço teórico sobre desenvolvimento, documentação e usabilidade de DSLs, e a aplicação de DSLs a domínios técnicos correlatos (dados em larga escala, aprendizado de máquina, grafos). A análise a seguir posiciona criticamente a proposta deste trabalho frente a cada uma dessas frentes.
+
+\subsection{Arcabouço de Decisão para Desenvolvimento de DSLs (Mernik et al.)}
+
+Mernik, Heering e Sloane~\cite{mernik2005} propõem um arcabouço amplamente citado para decidir \textit{quando} e \textit{como} desenvolver uma DSL, descrevendo um processo de decisão (análise de domínio, projeto da linguagem, implementação) e contrapondo os benefícios esperados -- expressividade no domínio, detecção antecipada de erros específicos do domínio, possibilidade de otimizações específicas -- aos custos de desenvolvimento e manutenção de uma linguagem dedicada.
+
+\textbf{Nossa abordagem:} o caso da FinFlow se encaixa diretamente no benefício de detecção antecipada de erros listado pelos autores: um sistema de tipos que torna erros de unidade financeira (\texttt{moeda} vs.\ \texttt{percentual}) detectáveis estaticamente é uma otimização de domínio que uma linguagem de propósito geral não oferece de forma nativa, o que justifica, segundo o próprio arcabouço de Mernik et al., o custo de implementar uma linguagem externa em vez de uma convenção de codificação.
+
+\subsection{Bibliografia e Mapeamento Sistemático de DSLs (van Deursen et al.; Nascimento et al.)}
+
+Van Deursen, Klint e Visser~\cite{vandeursen2000} sistematizam, em uma bibliografia anotada de referência na área, as diferentes abordagens de implementação de DSLs (internas/\textit{embedded} vs.\ externas, interpretadas vs.\ compiladas) e os principais desafios documentados na literatura até então, entre eles o equilíbrio entre expressividade e facilidade de análise estática. Nascimento et al.~\cite{nascimento2012} conduzem um mapeamento sistemático sobre o estado da arte em DSLs, catalogando domínios de aplicação, técnicas de implementação e lacunas de pesquisa recorrentes, apontando a escassez relativa de estudos de caso em domínios de negócio quando comparados a domínios técnicos (configuração de sistemas, processamento de sinais).
+
+\textbf{Nossa abordagem:} a opção por uma DSL externa com gramática e parser próprios (Seção III), em vez de uma biblioteca embarcada em Python, segue diretamente a recomendação de van Deursen et al.\ para domínios em que a análise estática é o requisito central; e a escolha do domínio financeiro como caso de uso responde diretamente à lacuna apontada por Nascimento et al.\ quanto à escassez de DSLs documentadas para domínios de negócio.
+
+\subsection{Usabilidade de DSLs (Rodrigues et al.)}
+
+Rodrigues, Campos e Zorzo~\cite{rodrigues2017} revisam sistematicamente estudos de usabilidade de DSLs, destacando que grande parte da literatura avalia a implementação técnica da linguagem, mas poucos trabalhos avaliam de fato sua usabilidade do ponto de vista do usuário final do domínio.
+
+\textbf{Nossa abordagem:} esse apontamento é reconhecido neste trabalho como uma limitação da etapa atual, e não contornado: a validação de corretude conduzida até o momento está centrada na verificação funcional do compilador (testes automatizados), e não em um estudo de usabilidade com usuários do domínio financeiro -- avaliação que permanece como trabalho futuro.
+
+\subsection{DSLs em Domínios Técnicos Correlatos (Breuker; Boukham et al.)}
+
+Breuker~\cite{breuker2014} analisa exploratoriamente o papel de DSLs voltadas à engenharia dirigida por modelos no contexto de análise de grandes volumes de dados e aprendizado de máquina, identificando DSLs que restringem o vocabulário de modelagem estatística a um conjunto de abstrações específicas do domínio de dados. Boukham, Younsi Dahbi e Chiadmi~\cite{boukham2025} realizam uma revisão sistemática de DSLs voltadas ao processamento algorítmico de grafos, catalogando como essas linguagens restringem a sintaxe de manipulação de grafos a operações seguras do ponto de vista estrutural.
+
+\textbf{Nossa abordagem:} ambos os trabalhos confirmam, em domínios tecnicamente distantes do financeiro (dados massivos/aprendizado de máquina e processamento de grafos, respectivamente), o mesmo padrão de projeto adotado pela FinFlow: restringir o vocabulário e o sistema de tipos da linguagem exatamente às abstrações que o domínio exige, deixando de fora generalidade que uma linguagem de propósito geral ofereceria, mas que não é relevante para o domínio -- no caso da FinFlow, isso se traduz na ausência deliberada de estruturas de dados compostas (listas, registros) na gramática atual (Seção III-B), suficiente para o conjunto de operações financeiras-alvo.
+
+\begin{table}[h]
+\centering
+\caption{Comparação com Trabalhos Relacionados sobre DSLs}
+\label{tab:comparacao}
+\begin{tabular}{|p{1.5cm}|p{2.0cm}|p{1.1cm}|p{1.6cm}|}
+\hline
+\textbf{Trabalho} & \textbf{Foco} & \textbf{Tipagem p/ domínio} & \textbf{Dados externos reais} \\
+\hline
+Mernik et al.~\cite{mernik2005} & Arcabouço decisório & -- & -- \\
+\hline
+van Deursen et al.~\cite{vandeursen2000} & Bibliografia anotada & -- & -- \\
+\hline
+Nascimento et al.~\cite{nascimento2012} & Mapeamento sistemático & -- & -- \\
+\hline
+Breuker~\cite{breuker2014} & DSL p/ Big Data/ML & Parcial & Não \\
+\hline
+Boukham et al.~\cite{boukham2025} & DSL p/ grafos & Não & Não \\
+\hline
+\textbf{Proposta (FinFlow)} & DSL financeira & \textbf{Sim} & \textbf{Planejado (BC)} \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Posicionamento crítico:} conforme sintetizado na Tabela~\ref{tab:comparacao}, os três primeiros trabalhos são contribuições teóricas/bibliográficas sobre DSLs em geral, não implementações; os dois últimos são implementações de DSL em domínios técnicos que não distinguem grandezas por tipo nem consomem dados externos reais. A contribuição deste trabalho não reside, portanto, na criação de uma técnica de análise sintática ou semântica inédita, mas na combinação, em um domínio de negócio pouco explorado pela literatura de DSLs (Seção II-B), de tipagem dedicada por grandeza com a futura composição de dados macroeconômicos reais obtidos de uma fonte pública -- combinação que nenhum dos trabalhos revisados apresenta conjuntamente.
+
+\subsection{Gramáticas Formais e Análise Sintática Ascendente}
+
+A especificação da sintaxe da FinFlow segue o modelo clássico de gramática livre de contexto (GLC), formalizada em notação EBNF (Seção III-B). A análise sintática é feita por um parser ascendente do tipo LALR(1) (\textit{Look-Ahead Left-to-right Rightmost derivation}, 1 símbolo de \textit{lookahead}), técnica descrita em detalhe por Aho et al.~\cite{aho2006compiladores}: o parser constrói a derivação da direita para a esquerda, usando uma pilha e uma tabela de ações (\textit{shift}/\textit{reduce}) derivada do autômato de estados LR(0) comprimido por mesclagem de estados com núcleos equivalentes -- o que torna o LALR(1) consideravelmente mais compacto que o LR(1) canônico, ao custo de poder introduzir, em gramáticas mal projetadas, conflitos de redução que um LR(1) completo resolveria. A ausência desses conflitos na gramática da FinFlow (Seção III-B) foi verificada empiricamente a partir da tabela gerada pelo próprio gerador de parser, em modo de depuração.
+
+\section{Metodologia e Desenvolvimento}
+
+A metodologia deste trabalho foi estruturada em um pipeline de quatro estágios, correspondentes às quatro fases clássicas de um compilador/interpretador: (A) ferramentas e ambiente de desenvolvimento; (B) especificação da gramática formal; (C) arquitetura do compilador (léxico, sintático, semântico, interpretação); e (D) o mecanismo de injeção de dados externos que viabilizará a integração futura com fontes de dados financeiros reais.
+
+\subsection{Ferramentas}
+
+A FinFlow foi implementada em Python 3, utilizando a biblioteca PLY (\textit{Python Lex-Yacc})~\cite{ply}, que reproduz em Python a interface clássica das ferramentas Lex/Yacc do Unix: regras léxicas e de produção são declaradas como funções Python anotadas por \textit{docstrings} contendo expressões regulares (léxico) ou regras de gramática (sintático), a partir das quais a biblioteca gera automaticamente o autômato léxico e a tabela de análise LALR(1). A escolha por Python/PLY -- em vez de, por exemplo, C++ com Flex/Bison ou Java com ANTLR -- se deu por três razões práticas: (i) a geração das tabelas ocorre em tempo de importação do módulo, sem passo de \textit{build} separado; (ii) a árvore sintática abstrata (AST) é representada diretamente como estruturas nativas de Python (tuplas aninhadas), simplificando a implementação do interpretador e da análise semântica sobre ela; e (iii) a familiaridade da equipe com o ecossistema Python.
+
+\subsection{Gramática Formal}
+
+A gramática da FinFlow, definida em \texttt{finflow/parser.py} e descrita a seguir em notação EBNF, compreende comandos de declaração e atribuição de variáveis tipadas, estruturas de controle condicional (\texttt{se}/\texttt{senao}), de repetição (\texttt{para...ate...faca}) e de seleção múltipla (\texttt{escolha}/\texttt{caso}/\texttt{padrao}), além do comando de saída (\texttt{imprimir}):
+
+\begin{lstlisting}[frame=single, breaklines=true]
+<programa>       ::= <comando> { <comando> }
+
+<comando>        ::= <tipo> ID "=" <expr> ";"
+                   |  ID "=" <expr> ";"
+                   |  "se" <expr> "entao" <bloco>
+                        [ "senao" <bloco> ]
+                   |  "para" ID "=" <expr>
+                        "ate" <expr> "faca" <bloco>
+                   |  "escolha" <expr> "{" <caso> { <caso> } "}"
+                   |  "imprimir" "(" <expr> ")" ";"
+
+<caso>           ::= "caso" <expr> ":" <comando> { <comando> }
+                   |  "padrao" ":" <comando> { <comando> }
+
+<bloco>          ::= "{" <comando> { <comando> } "}"
+
+<tipo>           ::= "moeda" | "percentual" | "inteiro" | "texto"
+
+<expr>           ::= <expr> ("e" | "ou") <expr>
+                   |  "nao" <expr>
+                   |  "buscar" "(" CTE_STRING "," <expr>
+                        [ "," <expr> ] ")"
+                   |  <expr> ("+" | "-") <expr>
+                   |  <expr> ("*" | "/") <expr>
+                   |  <expr> <op_rel> <expr>
+                   |  "(" <expr> ")"
+                   |  ID | CTE_INT | CTE_FLOAT
+                   |  CTE_PERCENTUAL | CTE_STRING
+
+<op_rel>         ::= "==" | "!=" | ">" | "<" | ">=" | "<="
+\end{lstlisting}
+
+A ambiguidade inerente à regra recursiva de \texttt{<expr>} é resolvida declarativamente, e não pela gramática, por meio da tabela de precedência e associatividade do PLY: \texttt{OP\_MULT} (\texttt{*}, \texttt{/}) tem precedência maior que \texttt{OP\_SOMA} (\texttt{+}, \texttt{-}), que por sua vez tem precedência maior que \texttt{OP\_REL} (operadores de comparação), todos associativos à esquerda -- garantindo, por exemplo, que \texttt{2 + 3 * 4} seja interpretado como $2 + (3 \times 4) = 14$, e não $(2+3)\times 4$.
+
+A gramática resultante, compilada pelo PLY, produz um autômato LALR(1) com \textbf{34 regras de produção} (incluindo a regra aumentada do PLY) e \textbf{83 estados}, sem nenhum conflito de \textit{shift/reduce} ou \textit{reduce/reduce}. Os operadores lógicos (\texttt{e}, \texttt{ou}, \texttt{nao}) têm precedência menor que a dos operadores relacionais, de modo que \texttt{a > 1 e b < 2 ou nao c == 3} é lido como $((a>1) \wedge (b<2)) \vee \neg(c=3)$. A construção \texttt{buscar("serie", ano)} é uma expressão primária cujo tipo é determinado estaticamente pela série escolhida.
+
+\subsection{Arquitetura do Compilador}
+
+A FinFlow é organizada como um pacote Python (\texttt{finflow/}) com quatro módulos correspondentes às quatro fases clássicas de tradução, executadas em sequência por uma função de conveniência (\texttt{rodar\_finflow}):
+
+\begin{enumerate}
+    \item \textbf{Análise léxica} (\texttt{lexer.py}): converte o código-fonte em uma sequência de \textit{tokens}, resolvendo palavras reservadas (\texttt{se}, \texttt{para}, \texttt{moeda}, etc.) por consulta a uma tabela hash dentro da regra de identificador, em vez de uma expressão regular dedicada para cada palavra-chave.
+    \item \textbf{Análise sintática} (\texttt{parser.py}): consome a sequência de tokens e produz uma AST representada como tuplas Python aninhadas (por exemplo, \texttt{('declaracao', tipo, nome, expr, linha)}).
+    \item \textbf{Análise semântica} (\texttt{semantica.py}): percorre a AST construindo uma tabela de símbolos (\texttt{\{nome: (tipo, valor)\}}) e verificando, para cada comando e expressão, a compatibilidade de tipos, lançando uma exceção \texttt{ErroSemantico} com a linha do código-fonte quando uma regra é violada. A Tabela~\ref{tab:tipos} resume as regras de composição aritmética implementadas.
+    \item \textbf{Interpretação} (\texttt{interpretador.py}): percorre a mesma AST uma segunda vez, executando o programa por avaliação \textit{tree-walking} (sem geração de código intermediário ou de máquina), mantendo um ambiente de execução (\texttt{\{nome: valor\}}) e formatando a saída de acordo com o tipo da expressão (\texttt{R\$\ 1050.00} para \texttt{moeda}, \texttt{5.00\%} para \texttt{percentual}).
+\end{enumerate}
+
+\begin{table}[h]
+\centering
+\caption{Regras de Composição Aritmética entre Tipos}
+\label{tab:tipos}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Par de tipos} & \textbf{+ / -} & \textbf{* / /} \\
+\hline
+moeda, moeda & moeda & moeda \\
+\hline
+percentual, percentual & percentual & percentual \\
+\hline
+inteiro, inteiro & inteiro & inteiro \\
+\hline
+moeda, inteiro & moeda & moeda \\
+\hline
+percentual, inteiro & percentual & percentual \\
+\hline
+moeda, percentual & \textbf{rejeitado} & moeda \\
+\hline
+\end{tabular}
+\end{table}
+
+Como evidenciado na última linha da Tabela~\ref{tab:tipos}, a soma direta entre \texttt{moeda} e \texttt{percentual} é a única composição explicitamente rejeitada entre os tipos numéricos: o par é intencionalmente ausente da tabela de tipos compatíveis para soma/subtração implementada em \texttt{semantica.py}, forçando o programador a expressar a operação via multiplicação (ex.: \texttt{saldo + saldo * taxa}), que é a forma matematicamente correta de aplicar uma taxa percentual a um valor monetário.
+
+\subsection{Mecanismo de Injeção de Dados Externos}
+
+Uma decisão de projeto central para a etapa em andamento do trabalho foi permitir que as funções de análise semântica e de interpretação recebam, opcionalmente, uma tabela de símbolos e um ambiente \textit{já parcialmente populados} (parâmetros \texttt{tabela\_inicial} e \texttt{ambiente\_inicial}), simulando variáveis declaradas fora do próprio código-fonte da FinFlow -- sem alterar o comportamento padrão das funções quando esses parâmetros não são fornecidos. Esse mecanismo é a base sobre a qual será construída a integração do interpretador com a API pública do SGS/BCB: valores como a Selic e o IPCA acumulados de um período poderão ser buscados em Python, fora do pipeline de compilação, e injetados como se já tivessem sido declarados no programa FinFlow, sem exigir nenhuma palavra-chave adicional na gramática (Seção III-B) nem alteração do comportamento padrão de \texttt{rodar\_finflow} quando os dados externos não são utilizados.
+
+\begin{thebibliography}{00}
+\bibitem{mernik2005} M. Mernik, J. Heering, and A. M. Sloane, ``When and How to Develop Domain-Specific Languages,'' \textit{ACM Computing Surveys}, vol. 37, no. 4, pp. 316--344, 2005.
+\bibitem{vandeursen2000} A. van Deursen, P. Klint, and J. Visser, ``Domain-Specific Languages: An Annotated Bibliography,'' \textit{ACM SIGPLAN Notices}, vol. 35, no. 6, pp. 26--36, 2000.
+\bibitem{nascimento2012} L. M. do Nascimento, D. L. Viana, P. A. M. Silveira Neto, D. A. O. Martins, V. C. Garcia, and S. R. L. Meira, ``A Systematic Mapping Study on Domain-Specific Languages,'' in \textit{Proc. 7th Int. Conf. Software Engineering Advances (ICSEA)}, 2012, pp. 179--187.
+\bibitem{rodrigues2017} I. P. Rodrigues, M. de B. Campos, and A. F. Zorzo, ``Usability Evaluation of Domain-Specific Languages: A Systematic Literature Review,'' in \textit{Proc. 19th Int. Conf. Human-Computer Interaction (HCI)}, 2017, pp. 522--534.
+\bibitem{breuker2014} D. Breuker, ``Towards Model-Driven Engineering for Big Data Analytics -- An Exploratory Analysis of Domain-Specific Languages for Machine Learning,'' in \textit{Proc. 47th Hawaii Int. Conf. System Sciences (HICSS)}, 2014, pp. 758--767.
+\bibitem{boukham2025} H. Boukham, K. Younsi Dahbi, and D. Chiadmi, ``Domain-Specific Languages for Algorithmic Graph Processing: A Systematic Literature Review,'' \textit{Algorithms}, vol. 18, no. 7, art. 445, 2025.
+\bibitem{aho2006compiladores} A. V. Aho, M. S. Lam, R. Sethi, and J. D. Ullman, \textit{Compilers: Principles, Techniques, and Tools}, 2nd ed. Addison-Wesley, 2006.
+\bibitem{ply} D. M. Beazley, ``PLY (Python Lex-Yacc),'' \url{https://www.dabeaz.com/ply/}, acessado em 2026.
+\end{thebibliography}
+
+\end{document}

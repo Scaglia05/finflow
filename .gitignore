@@ -18,3 +18,10 @@ parsetab.py
 # OS
 .DS_Store
 Thumbs.db
+
+# LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
