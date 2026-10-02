@@ -20,7 +20,8 @@ RAIZ = os.path.dirname(os.path.abspath(__file__))
 PAGINA = """<!doctype html>
 <html lang="pt-br"><head><meta charset="utf-8"><title>FinFlow Playground</title>
 <style>
-body{font-family:system-ui,sans-serif;max-width:900px;margin:1.5rem auto;padding:0 1rem;color:#1a1a1a}
+body{font-family:system-ui,sans-serif;max-width:900px;margin:1.5rem auto;padding:0 1rem;color:#1a1a1a;background:#fff}
+textarea{background:#fff;color:#1a1a1a}
 textarea{width:100%;height:320px;font:14px/1.4 Consolas,monospace;padding:.6rem;box-sizing:border-box}
 pre{background:#111;color:#e6e6e6;padding:.8rem;min-height:4rem;white-space:pre-wrap;border-radius:6px}
 pre.erro{color:#ff8a80} button,select{font-size:1rem;padding:.4rem .8rem;margin-right:.5rem}
