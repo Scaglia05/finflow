@@ -41,7 +41,7 @@ Araras, SP, Brasil\\
 \maketitle
 
 \begin{abstract}
-Este trabalho apresenta a FinFlow, uma linguagem de domínio específico (DSL) para modelagem de operações financeiras, cujo sistema de tipos distingue nativamente grandezas de naturezas distintas -- \texttt{moeda}, \texttt{percentual}, \texttt{inteiro} e \texttt{texto} -- rejeitando, em tempo de análise semântica, composições aritméticas incoerentes entre elas (como a soma direta entre um valor monetário e uma taxa percentual). A hipótese central deste trabalho é a de que essa tipagem dedicada não constitui, isoladamente, o objetivo da pesquisa, mas sim o mecanismo viabilizador de uma ferramenta de cálculo financeiro capaz de operar sobre dados macroeconômicos reais -- séries da Selic e do IPCA, obtidas da API pública do Banco Central do Brasil -- sem exigir que o programador redeclare ou converta manualmente essas grandezas no código-fonte. O compilador, implementado em Python com a biblioteca PLY (Python Lex-Yacc), é estruturado nas quatro fases clássicas de tradução: análise léxica, análise sintática (gramática LALR(1) com 29 regras de produção e 68 estados, livre de conflitos), análise semântica (tabela de símbolos com verificação de tipos) e interpretação (execução direta sobre a árvore sintática abstrata). O mecanismo de injeção de variáveis pré-populadas que viabilizará a integração com o Banco Central já está implementado nas funções de análise semântica e de interpretação; a integração em si -- a busca de dados na API do SGS/BCB -- constitui a etapa em andamento do projeto, não coberta por este artigo.
+Este trabalho apresenta a FinFlow, uma linguagem de domínio específico (DSL) para modelagem de operações financeiras, cujo sistema de tipos distingue nativamente grandezas de naturezas distintas -- \texttt{moeda}, \texttt{percentual}, \texttt{inteiro} e \texttt{texto} -- rejeitando, em tempo de análise semântica, composições aritméticas incoerentes entre elas (como a soma direta entre um valor monetário e uma taxa percentual). A hipótese central deste trabalho é a de que essa tipagem dedicada não constitui, isoladamente, o objetivo da pesquisa, mas sim o mecanismo viabilizador de uma ferramenta de cálculo financeiro capaz de operar sobre dados macroeconômicos reais -- séries da Selic e do IPCA, obtidas da API pública do Banco Central do Brasil -- sem exigir que o programador redeclare ou converta manualmente essas grandezas no código-fonte. O compilador, implementado em Python com a biblioteca PLY (Python Lex-Yacc), é estruturado nas quatro fases clássicas de tradução: análise léxica, análise sintática (gramática LALR(1) com 34 regras de produção e 83 estados, livre de conflitos), análise semântica (tabela de símbolos com verificação de tipos) e interpretação (execução direta sobre a árvore sintática abstrata). O mecanismo de injeção de variáveis pré-populadas que viabilizará a integração com o Banco Central já está implementado nas funções de análise semântica e de interpretação; a integração em si -- a busca de dados na API do SGS/BCB -- constitui a etapa em andamento do projeto, não coberta por este artigo.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -150,7 +150,11 @@ A gramática da FinFlow, definida em \texttt{finflow/parser.py} e descrita a seg
 
 <tipo>           ::= "moeda" | "percentual" | "inteiro" | "texto"
 
-<expr>           ::= <expr> ("+" | "-") <expr>
+<expr>           ::= <expr> ("e" | "ou") <expr>
+                   |  "nao" <expr>
+                   |  "buscar" "(" CTE_STRING "," <expr>
+                        [ "," <expr> ] ")"
+                   |  <expr> ("+" | "-") <expr>
                    |  <expr> ("*" | "/") <expr>
                    |  <expr> <op_rel> <expr>
                    |  "(" <expr> ")"
@@ -162,7 +166,7 @@ A gramática da FinFlow, definida em \texttt{finflow/parser.py} e descrita a seg
 
 A ambiguidade inerente à regra recursiva de \texttt{<expr>} é resolvida declarativamente, e não pela gramática, por meio da tabela de precedência e associatividade do PLY: \texttt{OP\_MULT} (\texttt{*}, \texttt{/}) tem precedência maior que \texttt{OP\_SOMA} (\texttt{+}, \texttt{-}), que por sua vez tem precedência maior que \texttt{OP\_REL} (operadores de comparação), todos associativos à esquerda -- garantindo, por exemplo, que \texttt{2 + 3 * 4} seja interpretado como $2 + (3 \times 4) = 14$, e não $(2+3)\times 4$.
 
-A gramática resultante, compilada pelo PLY, produz um autômato LALR(1) com \textbf{29 regras de produção} e \textbf{68 estados}, sem nenhum conflito de \textit{shift/reduce} ou \textit{reduce/reduce}. Os tokens \texttt{OP\_E}, \texttt{OP\_OU}, \texttt{OP\_NAO} (operadores lógicos) e \texttt{VIRGULA} são reconhecidos pelo analisador léxico mas ainda não participam de nenhuma produção da gramática atual, estando reservados para uma extensão futura da linguagem (expressões booleanas compostas e listas de argumentos).
+A gramática resultante, compilada pelo PLY, produz um autômato LALR(1) com \textbf{34 regras de produção} (incluindo a regra aumentada do PLY) e \textbf{83 estados}, sem nenhum conflito de \textit{shift/reduce} ou \textit{reduce/reduce}. Os operadores lógicos (\texttt{e}, \texttt{ou}, \texttt{nao}) têm precedência menor que a dos operadores relacionais, de modo que \texttt{a > 1 e b < 2 ou nao c == 3} é lido como $((a>1) \wedge (b<2)) \vee \neg(c=3)$. A construção \texttt{buscar("serie", ano)} é uma expressão primária cujo tipo é determinado estaticamente pela série escolhida.
 
 \subsection{Arquitetura do Compilador}
 
