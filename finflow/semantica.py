@@ -52,10 +52,20 @@ def tipo_de(expr, tabela):
         if nome not in tabela:
             raise ErroSemantico(f"[linha {linha}] variavel '{nome}' usada antes de ser declarada")
         return tabela[nome][0]
+    if tag == 'nao':
+        if tipo_de(expr[1], tabela) != 'booleano':
+            raise ErroSemantico(f"[linha {expr[2]}] 'nao' exige uma condicao (comparacao ou expressao logica)")
+        return 'booleano'
+    if tag == 'buscar':
+        return tipo_buscar(expr, tabela)
     if tag == 'binop':
         op, esq, dire, linha = expr[1], expr[2], expr[3], expr[4]
         tp_esq = tipo_de(esq, tabela)
         tp_dire = tipo_de(dire, tabela)
+        if op in ('e', 'ou'):
+            if tp_esq != 'booleano' or tp_dire != 'booleano':
+                raise ErroSemantico(f"[linha {linha}] '{op}' exige duas condicoes, mas recebeu '{tp_esq}' e '{tp_dire}'")
+            return 'booleano'
         if op in ('==', '!=', '>', '<', '>=', '<='):
             if tp_esq != tp_dire and (tp_esq, tp_dire) not in TIPOS_COMPATIVEIS_COMPARACAO:
                 raise ErroSemantico(f"[linha {linha}] comparacao entre tipos incompativeis: '{tp_esq}' e '{tp_dire}'")
@@ -70,10 +80,26 @@ def tipo_de(expr, tabela):
             )
         if op in ('*', '/'):
             par = (tp_esq, tp_dire)
-            if par in TIPOS_COMPATIVEIS_MULT or tp_esq == tp_dire:
-                return TIPOS_COMPATIVEIS_MULT.get(par, tp_esq)
+            if op == '/' and par == ('moeda', 'moeda'):
+                return 'percentual'  # razao entre dois valores monetarios
+            if par in TIPOS_COMPATIVEIS_MULT:
+                return TIPOS_COMPATIVEIS_MULT[par]
+            if par == ('percentual', 'percentual'):
+                return 'percentual'
             raise ErroSemantico(f"[linha {linha}] erro de tipo: nao e possivel multiplicar/dividir '{tp_esq}' com '{tp_dire}'")
     raise ErroSemantico(f"expressao nao reconhecida: {expr}")
+
+
+def tipo_buscar(expr, tabela):
+    from .bcb import SERIES
+    _, nome, anos, linha = expr
+    if nome not in SERIES:
+        raise ErroSemantico(
+            f"[linha {linha}] serie '{nome}' desconhecida em buscar(). Disponiveis: {', '.join(SERIES)}")
+    for ano in anos:
+        if tipo_de(ano, tabela) != 'inteiro':
+            raise ErroSemantico(f"[linha {linha}] os anos de buscar() devem ser 'inteiro'")
+    return SERIES[nome].tipo
 
 
 def checar_comando(cmd, tabela):

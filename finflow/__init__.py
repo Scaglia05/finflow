@@ -13,9 +13,11 @@ Uso rápido:
 """
 from .parser import parse
 from .semantica import analisar_semantica, ErroSemantico
-from .interpretador import executar
+from .interpretador import executar, ErroExecucao
+from .bcb import ErroBCB, buscar_serie_bc, SERIES
 
-__all__ = ["rodar_finflow", "ErroSemantico", "parse", "analisar_semantica", "executar"]
+__all__ = ["rodar_finflow", "rodar_finflow_com_dados_bc", "ErroSemantico", "ErroExecucao", "ErroBCB",
+           "buscar_serie_bc", "SERIES", "parse", "analisar_semantica", "executar"]
 
 
 def rodar_finflow(codigo: str, tabela_inicial: dict | None = None,
@@ -36,3 +38,15 @@ def rodar_finflow(codigo: str, tabela_inicial: dict | None = None,
         for linha in saida:
             print(linha)
     return ambiente
+
+
+def rodar_finflow_com_dados_bc(codigo: str, variaveis_externas: dict, imprimir_saida: bool = True):
+    """
+    variaveis_externas: {'nome': (tipo_finflow, valor_python)}, ex:
+    {'selic_ano': ('percentual', 0.1433)}. Essas variaveis ja "existem" para o
+    programa, que nao precisa (nem pode) redeclara-las.
+    """
+    tabela = {nome: (tipo, None) for nome, (tipo, _) in variaveis_externas.items()}
+    ambiente = {nome: valor for nome, (_, valor) in variaveis_externas.items()}
+    return rodar_finflow(codigo, tabela_inicial=tabela, ambiente_inicial=ambiente,
+                         imprimir_saida=imprimir_saida)
