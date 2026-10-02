@@ -17,6 +17,7 @@ reserved = {
     'e': 'OP_E', 'ou': 'OP_OU', 'nao': 'OP_NAO',
     'para': 'PARA', 'ate': 'ATE', 'faca': 'FACA',
     'escolha': 'ESCOLHA', 'caso': 'CASO', 'padrao': 'PADRAO',
+    'buscar': 'BUSCAR',
 }
 
 tokens = [
@@ -68,6 +69,7 @@ t_OP_SOMA = r'\+|-'
 t_OP_MULT = r'\*|/'
 t_ATR = r'='
 t_ignore = " \t\r"
+t_ignore_COMENTARIO = r'\#[^\n]*'
 
 
 def t_newline(t):
