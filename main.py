@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
 """
-CLI da FinFlow: roda um arquivo .ff a partir da linha de comando.
+CLI da FinFlow.
 
 Uso:
-    python main.py exemplos/juros.ff
+    python main.py exemplos/rendimento.ff     roda um programa FinFlow
+    python main.py --series                   lista as series do Banco Central disponiveis em buscar()
 """
 import sys
 
-from finflow import rodar_finflow, ErroSemantico
+from finflow import rodar_finflow, ErroSemantico, ErroExecucao, ErroBCB, SERIES
 
 
 def main():
+    if len(sys.argv) == 2 and sys.argv[1] == "--series":
+        for nome, s in SERIES.items():
+            print(f"{nome:<11} {s.tipo:<11} {s.descricao}")
+        return
+
     if len(sys.argv) != 2:
-        print("Uso: python main.py <arquivo.ff>")
+        print(__doc__)
         sys.exit(1)
 
     caminho = sys.argv[1]
@@ -25,7 +31,7 @@ def main():
 
     try:
         rodar_finflow(codigo)
-    except (SyntaxError, ErroSemantico) as e:
+    except (SyntaxError, ErroSemantico, ErroExecucao, ErroBCB) as e:
         print(f"Erro ao processar '{caminho}': {e}")
         sys.exit(1)
 

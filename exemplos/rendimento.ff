@@ -1,0 +1,27 @@
+moeda aplicado = 10000.00;
+
+percentual selic = buscar("selic", 2025);
+percentual poupanca = buscar("poupanca", 2025);
+percentual inflacao = buscar("ipca", 2025);
+
+moeda na_selic = aplicado + aplicado * selic;
+moeda na_poupanca = aplicado + aplicado * poupanca;
+
+imprimir("Selic em 2025:");
+imprimir(selic);
+imprimir("Inflacao (IPCA) em 2025:");
+imprimir(inflacao);
+imprimir("R$ 10.000 na Selic viraram:");
+imprimir(na_selic);
+imprimir("R$ 10.000 na poupanca viraram:");
+imprimir(na_poupanca);
+
+percentual rendimento_real = ((1 + selic) / (1 + inflacao)) - 1;
+imprimir("Ganho real da Selic sobre a inflacao:");
+imprimir(rendimento_real);
+
+se selic > inflacao e na_selic > na_poupanca entao {
+    imprimir("A Selic venceu a inflacao e a poupanca.");
+} senao {
+    imprimir("A Selic nao foi o melhor investimento.");
+}

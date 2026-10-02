@@ -13,6 +13,9 @@ from ply.yacc import yacc
 from .lexer import tokens, lexer  # noqa: F401  (tokens precisa estar no namespace deste modulo)
 
 precedence = (
+    ('left', 'OP_OU'),
+    ('left', 'OP_E'),
+    ('right', 'OP_NAO'),
     ('left', 'OP_REL'),
     ('left', 'OP_SOMA'),
     ('left', 'OP_MULT'),
@@ -107,6 +110,27 @@ def p_expressao_binop(p):
                   | expressao OP_MULT expressao
                   | expressao OP_REL expressao'''
     p[0] = ('binop', p[2], p[1], p[3], p.lineno(2))
+
+
+def p_expressao_logica(p):
+    '''expressao : expressao OP_E expressao
+                  | expressao OP_OU expressao'''
+    p[0] = ('binop', p[2], p[1], p[3], p.lineno(2))
+
+
+def p_expressao_nao(p):
+    'expressao : OP_NAO expressao'
+    p[0] = ('nao', p[2], p.lineno(1))
+
+
+def p_expressao_buscar(p):
+    'expressao : BUSCAR ABRE_P CTE_STRING VIRGULA expressao FECHA_P'
+    p[0] = ('buscar', p[3], [p[5]], p.lineno(1))
+
+
+def p_expressao_buscar_periodo(p):
+    'expressao : BUSCAR ABRE_P CTE_STRING VIRGULA expressao VIRGULA expressao FECHA_P'
+    p[0] = ('buscar', p[3], [p[5], p[7]], p.lineno(1))
 
 
 def p_expressao_grupo(p):

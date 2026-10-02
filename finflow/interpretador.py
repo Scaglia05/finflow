@@ -3,7 +3,13 @@ Interpretador (tree-walking) da FinFlow: executa a AST de fato.
 """
 
 
+class ErroExecucao(RuntimeError):
+    pass
+
+
 def formatar(valor, tipo):
+    if tipo == 'booleano':
+        return "verdadeiro" if valor else "falso"
     if tipo == 'moeda':
         return f"R$ {valor:.2f}"
     if tipo == 'percentual':
@@ -17,14 +23,25 @@ def avaliar(expr, ambiente, tabela):
         return expr[1]
     if tag == 'id':
         return ambiente[expr[1]]
+    if tag == 'nao':
+        return not avaliar(expr[1], ambiente, tabela)
+    if tag == 'buscar':
+        from .bcb import valor_serie
+        anos = [avaliar(a, ambiente, tabela) for a in expr[2]]
+        return valor_serie(expr[1], *anos)
     if tag == 'binop':
         op = expr[1]
         esq = avaliar(expr[2], ambiente, tabela)
+        if op == 'e': return bool(esq) and bool(avaliar(expr[3], ambiente, tabela))
+        if op == 'ou': return bool(esq) or bool(avaliar(expr[3], ambiente, tabela))
         dire = avaliar(expr[3], ambiente, tabela)
         if op == '+': return esq + dire
         if op == '-': return esq - dire
         if op == '*': return esq * dire
-        if op == '/': return esq / dire
+        if op == '/':
+            if dire == 0:
+                raise ErroExecucao(f"[linha {expr[4]}] divisao por zero")
+            return esq // dire if isinstance(esq, int) and isinstance(dire, int) else esq / dire
         if op == '==': return esq == dire
         if op == '!=': return esq != dire
         if op == '>': return esq > dire
