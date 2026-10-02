@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinFlow</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23f5b82e'/%3E%3Ctext x='32' y='45' font-size='38' font-weight='800' text-anchor='middle' fill='%23123' font-family='Arial'%3E$%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f3f6f4;--card:#fff;--ink:#14231c;--mut:#5b6b63;--line:#dde5e0;
+  --head:#0d2b21;--accent:#12a05c;--accent-ink:#fff;--gold:#f5b82e;
+  --ok:#12a05c;--okbg:#e4f6ec;--err:#c62828;--errbg:#fdeaea;--skip:#8a9690;--skipbg:#eef1ef;
+  --code:#0f1a15;--codeink:#d7efe2;--chip:#e9f0ec;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1511;--card:#14201a;--ink:#e4efe9;--mut:#93a69c;--line:#26382f;
+  --head:#07120d;--okbg:#12301f;--errbg:#3a1717;--err:#ff8a80;--skipbg:#1c2a23;--skip:#7d8f85;
+  --code:#09110d;--chip:#1d2d25;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--head);color:#fff;padding:.9rem 1.5rem;display:flex;align-items:center;gap:1rem}
+header svg{width:84px;height:56px;flex:none}
+header h1{margin:0;font-size:1.5rem;letter-spacing:.3px}
+header p{margin:0;color:#a9c7b8;font-size:.9rem}
+main{max-width:1280px;margin:0 auto;padding:1rem 1.25rem 3rem;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:1.25rem}
+@media (max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.1rem}
+.card h2{margin:0 0 .6rem;font-size:1rem}
+.bar{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.7rem}
+select,button{font:inherit;padding:.45rem .8rem;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+button.primario{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600;cursor:pointer}
+button.primario:disabled{opacity:.6;cursor:wait}
+button.sec{cursor:pointer}
+textarea{width:100%;height:430px;font:13.5px/1.5 Consolas,"Cascadia Mono",monospace;padding:.7rem;border:1px solid var(--line);border-radius:8px;background:var(--code);color:var(--codeink);resize:vertical;tab-size:4}
+.dica{color:var(--mut);font-size:.82rem;margin:.5rem 0 0}
+.resultado pre{margin:0;background:var(--code);color:var(--codeink);padding:.9rem 1rem;border-radius:8px;white-space:pre-wrap;font:14px/1.55 Consolas,monospace;min-height:3.5rem}
+.resultado pre.erro{background:none;padding:0;min-height:0}
+.vazio{color:var(--mut);font-style:italic}
+.erro-box{background:var(--errbg);color:var(--err);border-radius:8px;padding:.8rem 1rem;font-weight:500}
+.erro-box small{display:block;color:var(--mut);font-weight:400;margin-top:.3rem}
+.passos{margin-top:1.25rem}
+.passo{border:1px solid var(--line);border-radius:10px;margin-bottom:.6rem;background:var(--card);opacity:0;transform:translateY(6px);transition:.3s}
+.passo.on{opacity:1;transform:none}
+.passo>summary{list-style:none;display:flex;align-items:center;gap:.65rem;padding:.65rem .85rem;cursor:pointer}
+.passo>summary::-webkit-details-marker{display:none}
+.num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--chip);display:grid;place-items:center;font-weight:700;font-size:.8rem}
+.passo.ok .num{background:var(--ok);color:#fff}.passo.erro .num{background:var(--err);color:#fff}
+.tit{font-weight:600}.sub{color:var(--mut);font-size:.85rem}
+.tit-box{flex:1;min-width:0}
+.chip{font-size:.75rem;padding:.12rem .5rem;border-radius:99px;background:var(--chip);color:var(--mut);white-space:nowrap}
+.passo.ok .chip.estado{background:var(--okbg);color:var(--ok)}
+.passo.erro .chip.estado{background:var(--errbg);color:var(--err)}
+.passo.pulado .chip.estado{background:var(--skipbg);color:var(--skip)}
+.passo.pulado{opacity:.6}
+.corpo{padding:.1rem .9rem .9rem 3rem;font-size:.9rem}
+.corpo p{margin:.2rem 0 .6rem;color:var(--mut)}
+.tokens{display:flex;flex-wrap:wrap;gap:.3rem}
+.tk{font:12px Consolas,monospace;background:var(--chip);border-radius:6px;padding:.1rem .4rem}
+.tk b{color:var(--accent)}
+.arv{margin:0;background:var(--code);color:var(--codeink);padding:.7rem;border-radius:8px;overflow:auto;max-height:260px;font:12.5px/1.45 Consolas,monospace}
+table{border-collapse:collapse;width:100%}
+td,th{text-align:left;padding:.25rem .5rem;border-bottom:1px solid var(--line);font-size:.88rem}
+th{color:var(--mut);font-weight:600}
+.tp{font:12px Consolas,monospace}
+.consulta{border-left:3px solid var(--gold);padding:.3rem .7rem;margin:.4rem 0;background:var(--chip);border-radius:0 8px 8px 0}
+.consulta code{font-size:.78rem;word-break:break-all;color:var(--mut)}
+.todos{grid-column:1/-1}
+.todos-item{border:1px solid var(--line);border-radius:8px;margin:.4rem 0;padding:.4rem .8rem}
+.todos-item summary{cursor:pointer;display:flex;gap:.6rem;align-items:center}
+.todos-item pre{margin:.5rem 0 0;background:var(--code);color:var(--codeink);padding:.6rem;border-radius:6px;white-space:pre-wrap;font:13px Consolas,monospace}
+.pill-ok{color:var(--ok)}.pill-err{color:var(--err)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #fff6;border-top-color:#fff;border-radius:50%;animation:g .8s linear infinite;vertical-align:-2px;margin-right:.4rem}
+@keyframes g{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <svg viewBox="0 0 120 80" role="img" aria-label="Cifrão com asas">
+    <defs>
+      <linearGradient id="asa" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7be3ae"/><stop offset="1" stop-color="#12a05c"/></linearGradient>
+      <radialGradient id="moeda" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#e5a50f"/></radialGradient>
+    </defs>
+    <g id="asaE" fill="url(#asa)">
+      <path d="M42 30 C30 18 14 14 3 17 C13 25 27 31 41 36Z"/>
+      <path d="M41 37 C28 29 11 30 1 36 C13 41 27 43 41 43Z"/>
+      <path d="M41 44 C29 44 14 48 5 56 C19 55 32 53 42 50Z"/>
+      <path d="M43 51 C33 54 22 60 16 68 C28 65 38 60 45 56Z" opacity=".8"/>
+    </g>
+    <g transform="translate(120 0) scale(-1 1)" fill="url(#asa)">
+      <path d="M42 30 C30 18 14 14 3 17 C13 25 27 31 41 36Z"/>
+      <path d="M41 37 C28 29 11 30 1 36 C13 41 27 43 41 43Z"/>
+      <path d="M41 44 C29 44 14 48 5 56 C19 55 32 53 42 50Z"/>
+      <path d="M43 51 C33 54 22 60 16 68 C28 65 38 60 45 56Z" opacity=".8"/>
+    </g>
+    <circle cx="60" cy="40" r="21" fill="url(#moeda)" stroke="#b9800a" stroke-width="2"/>
+    <text x="60" y="52" font-size="32" font-weight="800" text-anchor="middle" fill="#3b2a00" font-family="Georgia,serif">$</text>
+  </svg>
+  <div>
+    <h1>FinFlow</h1>
+    <p>Linguagem para finanças com dados reais do Banco Central</p>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>1. Escreva (ou escolha) um programa</h2>
+    <div class="bar">
+      <select id="ex" aria-label="Exemplos"></select>
+      <button id="run" class="primario">Executar</button>
+      <button id="todos" class="sec">Rodar todos os exemplos</button>
+    </div>
+    <textarea id="code" spellcheck="false"></textarea>
+    <p class="dica">Ctrl+Enter executa. Use <code>buscar("selic", 2025)</code> para trazer dados reais. Séries: <span id="series"></span>.</p>
+  </section>
+
+  <section>
+    <div class="card resultado">
+      <h2>2. Resultado do programa</h2>
+      <pre id="out"><span class="vazio">Clique em Executar para ver a saída aqui.</span></pre>
+    </div>
+    <div class="passos" id="passos"></div>
+  </section>
+
+  <section class="card todos" id="todosBox" hidden>
+    <h2>Todos os exemplos</h2>
+    <div id="todosLista"></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
+let EXEMPLOS = {};
+
+const FASES = [
+  {id:"lexico", n:1, titulo:"Análise léxica", sub:"Quebra o texto em palavras (tokens)",
+   expl:"O compilador lê o código letra por letra e separa em tokens: palavras reservadas (se, para, moeda), nomes de variáveis, números, operadores."},
+  {id:"sintatico", n:2, titulo:"Análise sintática", sub:"Monta a estrutura do programa (árvore)",
+   expl:"Os tokens são organizados em uma árvore (AST) que mostra a estrutura: quais comandos existem e como as contas se agrupam, respeitando a precedência (* antes de +)."},
+  {id:"semantico", n:3, titulo:"Análise semântica", sub:"Confere os tipos e as variáveis",
+   expl:"Antes de executar, verifica se o programa faz sentido: variáveis declaradas, tipos compatíveis. Por exemplo, não deixa somar moeda com percentual direto."},
+  {id:"bcb", n:4, titulo:"Banco Central", sub:"Busca dados reais na internet",
+   expl:"Cada buscar(...) consulta a API pública do Banco Central (SGS). Séries mensais são compostas: (1+t1)×(1+t2)×… − 1."},
+  {id:"execucao", n:5, titulo:"Execução", sub:"Roda o programa e calcula os valores",
+   expl:"O interpretador percorre a árvore comando por comando, calcula as expressões e guarda o valor final de cada variável."},
+];
+const FASE_NOME = {lexico:"léxica", sintatico:"sintática", semantico:"semântica", execucao:"de execução"};
+const DICA = {
+  lexico:"Há um caractere ou palavra que a linguagem não reconhece.",
+  sintatico:"A estrutura está errada (falta ';', '}' ou palavra-chave).",
+  semantico:"Os tipos ou as variáveis não fazem sentido juntos.",
+  execucao:"Algo falhou ao calcular ou ao buscar os dados (ex.: sem internet, divisão por zero)."
+};
+
+function pct(x){ return (x*100).toFixed(2).replace(".", ",") + "%"; }
+function brl(x){ return "R$ " + x.toFixed(2).replace(".", ","); }
+function fmt(valor, tipo){ return tipo === "percentual" ? pct(valor) : brl(valor); }
+
+function passo(f, estado, chip, corpoFn, tempo){
+  const d = el("details", "passo " + estado);
+  d.open = estado === "ok" && (f.id === "bcb" || f.id === "execucao");
+  const s = el("summary");
+  s.append(el("span", "num", f.n));
+  const tb = el("div", "tit-box"); tb.append(el("div", "tit", f.titulo), el("div", "sub", f.sub));
+  s.append(tb);
+  if (tempo !== undefined) s.append(el("span", "chip", tempo + " ms"));
+  s.append(el("span", "chip estado", chip));
+  d.append(s);
+  const c = el("div", "corpo");
+  c.append(el("p", "", f.expl));
+  if (corpoFn) corpoFn(c);
+  d.append(c);
+  return d;
+}
+
+function corpoLexico(r){ return c => {
+  const box = el("div", "tokens");
+  r.tokens.slice(0, 120).forEach(t => {
+    const s = el("span", "tk"); const b = el("b", "", t.tipo);
+    s.append(b, " " + String(t.valor)); box.append(s);
+  });
+  if (r.tokens.length > 120) box.append(el("span", "tk", "+" + (r.tokens.length - 120) + " tokens"));
+  c.append(el("div", "", r.tokens.length + " tokens encontrados:"), box);
+};}
+function corpoSintatico(r){ return c => c.append(el("pre", "arv", r.arvore.join("\n"))); }
+function corpoSemantico(r){ return c => {
+  if (!r.tabela.length){ c.append(el("div", "vazio", "Nenhuma variável declarada.")); return; }
+  const t = el("table"); const h = el("tr"); h.append(el("th", "", "Variável"), el("th", "", "Tipo")); t.append(h);
+  r.tabela.forEach(v => { const tr = el("tr"); tr.append(el("td", "", v.nome), el("td", "tp", v.tipo)); t.append(tr); });
+  c.append(el("div", "", "Tabela de símbolos (" + r.tabela.length + " variáveis, todos os tipos compatíveis):"), t);
+};}
+function corpoBcb(r){ return c => {
+  r.bcb.forEach(e => {
+    const b = el("div", "consulta");
+    if (e.tipo === "consulta"){
+      b.append(el("div", "", "Requisição HTTP → " + e.linhas + " valores em " + e.ms + " ms"), el("code", "", e.url));
+    } else {
+      const modo = e.modo === "acumulado" ? "composto dos valores mensais" : "último valor do período";
+      b.append(el("div", "", "Série “" + e.serie + "” (SGS " + e.codigo + "), " + e.periodo + " — " + modo));
+      b.append(el("div", "", "→ " + e.valores + " valores" + (e.cache ? " (já em cache, sem nova requisição)" : "") + " → " + fmt(e.resultado, e.tipo_finflow)));
+    }
+    c.append(b);
+  });
+};}
+function corpoExecucao(r){ return c => {
+  if (!r.variaveis.length){ c.append(el("div", "vazio", "Sem variáveis.")); return; }
+  const t = el("table"); const h = el("tr"); h.append(el("th", "", "Variável"), el("th", "", "Tipo"), el("th", "", "Valor final")); t.append(h);
+  r.variaveis.forEach(v => { const tr = el("tr"); tr.append(el("td", "", v.nome), el("td", "tp", v.tipo), el("td", "", v.valor)); t.append(tr); });
+  c.append(el("div", "", "Valor final de cada variável:"), t);
+};}
+
+function montarPassos(r){
+  const falha = r.erro ? r.erro.fase : null;
+  const ordem = ["lexico", "sintatico", "semantico", "bcb", "execucao"];
+  const dadosOk = {lexico: !!r.tokens, sintatico: !!r.arvore, semantico: !!r.tabela, execucao: !!r.variaveis};
+  const nos = [];
+  FASES.forEach(f => {
+    let d;
+    if (f.id === "bcb"){
+      const usou = r.bcb.length > 0;
+      if (!usou && !falha){ d = passo(f, "pulado", "não usado", c => c.append(el("div", "vazio", "Este programa não usa buscar(), então nenhum dado foi buscado.")));
+      } else if (!usou){ d = passo(f, "pulado", falha === "execucao" ? "sem consulta" : "não executado");
+      } else {
+        const ms = r.bcb.filter(e => e.tipo === "consulta").reduce((a, e) => a + e.ms, 0);
+        d = passo(f, falha === "execucao" ? "erro" : "ok", r.bcb.filter(e => e.tipo === "serie").length + " séries", corpoBcb(r), ms);
+      }
+    } else if (dadosOk[f.id]){
+      const fn = {lexico: corpoLexico, sintatico: corpoSintatico, semantico: corpoSemantico, execucao: corpoExecucao}[f.id](r);
+      d = passo(f, "ok", "ok", fn, r.tempos[f.id]);
+    } else if (falha === f.id){
+      d = passo(f, "erro", "erro", c => c.append(el("div", "erro-box", r.erro.mensagem)));
+      d.open = true;
+    } else {
+      d = passo(f, "pulado", "não executado");
+    }
+    nos.push(d);
+  });
+  return nos;
+}
+
+async function executar(){
+  const btn = $("run"); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>Executando…';
+  $("passos").replaceChildren();
+  $("out").replaceChildren(el("span", "vazio", "Executando… (consultas ao Banco Central podem levar alguns segundos)"));
+  let r;
+  try {
+    const resp = await fetch("/run", {method: "POST", body: JSON.stringify({codigo: $("code").value})});
+    r = await resp.json();
+  } catch (e) {
+    r = {erro: {fase: "execucao", mensagem: "Não consegui falar com o servidor: " + e}, bcb: []};
+  }
+  btn.disabled = false; btn.textContent = "Executar";
+
+  const out = $("out"); out.className = r.erro ? "erro" : "";
+  if (r.erro){
+    const b = el("div", "erro-box", "Erro na fase " + (FASE_NOME[r.erro.fase] || "") + ": " + r.erro.mensagem);
+    b.append(el("small", "", DICA[r.erro.fase] || ""));
+    out.replaceChildren(b);
+  } else if (!r.saida.length){
+    out.replaceChildren(el("span", "vazio", "O programa rodou, mas não usou imprimir(...)."));
+  } else {
+    out.textContent = r.saida.join("\n");
+  }
+  const nos = montarPassos(r);
+  nos.forEach((n, i) => { $("passos").append(n); setTimeout(() => n.classList.add("on"), 120 * i); });
+}
+
+async function rodarTodos(){
+  const box = $("todosBox"), lista = $("todosLista"); box.hidden = false; lista.replaceChildren(el("p", "vazio", "Executando todos…"));
+  const b = $("todos"); b.disabled = true;
+  lista.replaceChildren();
+  for (const nome of Object.keys(EXEMPLOS)){
+    const resp = await fetch("/run", {method: "POST", body: JSON.stringify({codigo: EXEMPLOS[nome]})});
+    const r = await resp.json();
+    const d = el("details", "todos-item"); const s = el("summary");
+    s.append(el("b", "", nome), el("span", r.erro ? "pill-err" : "pill-ok", r.erro ? "erro (" + (FASE_NOME[r.erro.fase] || "") + ")" : "ok"));
+    const ver = el("button", "sec", "abrir no editor"); ver.onclick = ev => { ev.preventDefault(); $("ex").value = nome; $("code").value = EXEMPLOS[nome]; window.scrollTo({top: 0, behavior: "smooth"}); executar(); };
+    s.append(ver); d.append(s);
+    d.append(el("pre", "", r.erro ? r.erro.mensagem : r.saida.join("\n")));
+    lista.append(d);
+  }
+  b.disabled = false;
+}
+
+(async () => {
+  const dados = await (await fetch("/dados")).json();
+  EXEMPLOS = dados.exemplos;
+  $("series").textContent = Object.keys(dados.series).join(", ");
+  for (const n of Object.keys(EXEMPLOS)) $("ex").append(el("option", "", n));
+  $("ex").value = EXEMPLOS["rendimento.ff"] ? "rendimento.ff" : Object.keys(EXEMPLOS)[0];
+  $("code").value = EXEMPLOS[$("ex").value];
+  $("ex").onchange = () => { $("code").value = EXEMPLOS[$("ex").value]; };
+  $("run").onclick = executar; $("todos").onclick = rodarTodos;
+  $("code").addEventListener("keydown", e => { if (e.ctrlKey && e.key === "Enter") executar(); });
+})();
+</script>
+</body>
+</html>
