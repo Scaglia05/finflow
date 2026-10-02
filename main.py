@@ -3,8 +3,8 @@
 CLI da FinFlow.
 
 Uso:
-    python main.py                            roda TODOS os exemplos e abre o playground web
-    python main.py --sem-playground           roda todos os exemplos e termina
+    python main.py                            abre a interface web (editor, passo a passo e botao "Rodar todos")
+    python main.py --console                  roda todos os exemplos no terminal e termina
     python main.py exemplos/rendimento.ff     roda um unico programa FinFlow
     python main.py --series                   lista as series do Banco Central disponiveis em buscar()
 
@@ -50,12 +50,11 @@ def main():
     if args == ["--series"]:
         for nome, s in SERIES.items():
             print(f"{nome:<11} {s.tipo:<11} {s.descricao}")
-    elif not args or args == ["--sem-playground"]:
+    elif args == ["--console"]:
         rodar_todos()
-        if not args:
-            from playground import servir
-            print()
-            servir()
+    elif not args:
+        from playground import servir
+        servir()
     elif len(args) == 1 and not args[0].startswith("--"):
         sys.exit(0 if rodar_arquivo(args[0]) else 1)
     else:

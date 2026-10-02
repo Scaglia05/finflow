@@ -21,6 +21,16 @@ class ErroBCB(RuntimeError):
     pass
 
 
+# Gancho opcional: se definido, recebe um dict por evento (consulta HTTP ou
+# resultado de serie). Usado pela interface web para mostrar o que acontece.
+observador = None
+
+
+def _emitir(**evento):
+    if observador is not None:
+        observador(evento)
+
+
 @dataclass(frozen=True)
 class Serie:
     codigo: int
@@ -67,12 +77,15 @@ def _requisitar(codigo: int, ini: dt.date, fim: dt.date) -> list:
     params = {"formato": "json", "dataInicial": _fmt(ini), "dataFinal": _fmt(fim)}
     ultimo_erro = None
     for tentativa in range(TENTATIVAS):
+        t0 = time.perf_counter()
         try:
             resp = requests.get(URL_SGS.format(codigo=codigo), params=params, timeout=TIMEOUT_S)
         except (requests.ConnectionError, requests.Timeout) as e:
             ultimo_erro = f"sem conexao com a API do Banco Central ({type(e).__name__})"
         else:
+            ms = round((time.perf_counter() - t0) * 1000)
             if resp.status_code == 404:
+                _emitir(tipo='consulta', url=resp.url, ms=ms, linhas=0)
                 return []  # o SGS responde 404 quando nao ha dados no periodo
             if resp.status_code >= 500:
                 ultimo_erro = f"API do Banco Central indisponivel (HTTP {resp.status_code})"
@@ -81,7 +94,9 @@ def _requisitar(codigo: int, ini: dt.date, fim: dt.date) -> list:
             else:
                 try:
                     linhas = resp.json()
-                    return [(l["data"], float(l["valor"])) for l in linhas if l.get("valor") not in (None, "")]
+                    valores = [(l["data"], float(l["valor"])) for l in linhas if l.get("valor") not in (None, "")]
+                    _emitir(tipo='consulta', url=resp.url, ms=ms, linhas=len(valores))
+                    return valores
                 except (ValueError, KeyError, TypeError):
                     raise ErroBCB(f"resposta inesperada da API do Banco Central para a serie {codigo}") from None
         if tentativa < TENTATIVAS - 1:
@@ -142,10 +157,16 @@ def valor_serie(nome: str, ano_inicial: int, ano_final: int | None = None) -> fl
         raise ErroBCB(f"nao ha dados de '{nome}' para {ano_inicial} (ano no futuro)")
     ini = dt.date(ano_inicial, 1, 1)
     fim = min(dt.date(ano_final, 12, 31), hoje)
+    acertos = _valores.cache_info().hits
     valores = buscar_valores(serie.codigo, _fmt(ini), _fmt(fim))
     if not valores:
         raise ErroBCB(f"a API nao retornou dados de '{nome}' entre {_fmt(ini)} e {_fmt(fim)}")
     if serie.modo == 'acumulado':
-        return _acumular(valores)
-    ultimo = valores[-1][1]
-    return ultimo / 100 if serie.tipo == 'percentual' else ultimo
+        resultado = _acumular(valores)
+    else:
+        ultimo = valores[-1][1]
+        resultado = ultimo / 100 if serie.tipo == 'percentual' else ultimo
+    _emitir(tipo='serie', serie=nome, codigo=serie.codigo, modo=serie.modo, tipo_finflow=serie.tipo,
+            periodo=f"{_fmt(ini)} a {_fmt(fim)}", valores=len(valores), resultado=resultado,
+            cache=_valores.cache_info().hits > acertos)
+    return resultado

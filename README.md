@@ -17,13 +17,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
-`python main.py` executa **todos** os exemplos da pasta `exemplos/` (com dados reais do Banco Central) e em seguida abre o playground web em `http://127.0.0.1:8000`: escolha um exemplo, edite à vontade e clique em **Executar** (Ctrl+Enter). Outras formas:
+`python main.py` abre a **interface web** em `http://127.0.0.1:8000`: escolha um exemplo (ou escreva o seu), clique em **Executar** (Ctrl+Enter) e veja o resultado e o passo a passo do compilador — tokens, árvore sintática, tabela de tipos, consultas ao Banco Central (com a URL e o tempo de cada requisição) e variáveis finais. O botão **Rodar todos os exemplos** executa a pasta `exemplos/` inteira. Outras formas:
 
 ```bash
-python main.py --sem-playground           # só roda os exemplos
-python main.py exemplos/rendimento.ff     # roda um único programa
+python main.py --console                  # roda todos os exemplos no terminal
+python main.py exemplos/rendimento.ff     # roda um único programa no terminal
 python main.py --series                   # séries do Banco Central disponíveis
-python playground.py                      # só o editor web
 python -m pytest testes -v                # testes automatizados (rodam à parte)
 ```
 
@@ -127,7 +126,8 @@ FINFLOW_LIVE=1 pytest testes/ -v       # inclui teste contra a API real (Windows
 ├── exemplos/           # programas .ff (rendimento, inflacao_por_ano, cambio, ...)
 ├── testes/             # suíte de testes (pytest)
 ├── Docs/               # artigo e materiais da disciplina
-├── main.py             # roda todos os exemplos + playground (ou um arquivo .ff)
-├── playground.py       # editor web local
+├── main.py             # abre a interface web (ou roda um .ff / todos no terminal)
+├── playground.py       # servidor da interface web
+├── web/index.html      # interface (logo, editor, passo a passo)
 └── requirements.txt
 ```
