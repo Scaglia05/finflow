@@ -14,15 +14,20 @@ Requer Python 3.10+ e internet (os dados vêm da API pública do Banco Central, 
 git clone https://github.com/Scaglia05/finflow.git
 cd finflow
 pip install -r requirements.txt
-python playground.py
+python main.py
 ```
 
-Abre `http://127.0.0.1:8000` com um editor: escolha um exemplo, edite à vontade e clique em **Executar** (Ctrl+Enter). Pela linha de comando:
+`python main.py` executa **todos** os exemplos da pasta `exemplos/` (com dados reais do Banco Central) e em seguida abre o playground web em `http://127.0.0.1:8000`: escolha um exemplo, edite à vontade e clique em **Executar** (Ctrl+Enter). Outras formas:
 
 ```bash
-python main.py exemplos/rendimento.ff     # quanto rende R$ 10.000 na Selic vs. poupança vs. inflação
+python main.py --sem-playground           # só roda os exemplos
+python main.py exemplos/rendimento.ff     # roda um único programa
 python main.py --series                   # séries do Banco Central disponíveis
+python playground.py                      # só o editor web
+python -m pytest testes -v                # testes automatizados (rodam à parte)
 ```
+
+(`erro_tipo.ff` falha de propósito: demonstra a análise semântica rejeitando `moeda + percentual`.)
 
 ## O que a linguagem faz
 
@@ -122,7 +127,7 @@ FINFLOW_LIVE=1 pytest testes/ -v       # inclui teste contra a API real (Windows
 ├── exemplos/           # programas .ff (rendimento, inflacao_por_ano, cambio, ...)
 ├── testes/             # suíte de testes (pytest)
 ├── Docs/               # artigo e materiais da disciplina
-├── main.py             # CLI: python main.py arquivo.ff
+├── main.py             # roda todos os exemplos + playground (ou um arquivo .ff)
 ├── playground.py       # editor web local
 └── requirements.txt
 ```

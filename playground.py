@@ -97,21 +97,25 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+def servir(host="127.0.0.1", port=8000, abrir_navegador=True):
+    servidor = ThreadingHTTPServer((host, port), Handler)
+    url = f"http://{host}:{port}"
+    print(f"FinFlow Playground em {url}  (Ctrl+C para sair)")
+    if abrir_navegador:
+        webbrowser.open(url)
+    try:
+        servidor.serve_forever()
+    except KeyboardInterrupt:
+        pass
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8000)
     ap.add_argument("--sem-navegador", action="store_true")
     args = ap.parse_args()
-    servidor = ThreadingHTTPServer((args.host, args.port), Handler)
-    url = f"http://{args.host}:{args.port}"
-    print(f"FinFlow Playground em {url}  (Ctrl+C para sair)")
-    if not args.sem_navegador:
-        webbrowser.open(url)
-    try:
-        servidor.serve_forever()
-    except KeyboardInterrupt:
-        pass
+    servir(args.host, args.port, not args.sem_navegador)
 
 
 if __name__ == "__main__":
