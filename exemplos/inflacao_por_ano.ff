@@ -1,0 +1,11 @@
+moeda poder_de_compra = 1000.00;
+
+para ano = 2020 ate 2025 faca {
+    percentual ipca = buscar("ipca", ano);
+    poder_de_compra = poder_de_compra / (1 + ipca);
+    imprimir(ano);
+    imprimir(ipca);
+}
+
+imprimir("R$ 1000,00 de 2019 equivalem hoje, em poder de compra, a:");
+imprimir(poder_de_compra);

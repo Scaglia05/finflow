@@ -1,0 +1,20 @@
+moeda dolar = buscar("dolar", 2025);
+moeda euro = buscar("euro", 2025);
+inteiro nivel = 0;
+
+imprimir("Dolar no fim de 2025:");
+imprimir(dolar);
+imprimir("Euro no fim de 2025:");
+imprimir(euro);
+
+se dolar > 5.50 ou euro > 6.50 entao {
+    nivel = 2;
+} senao {
+    nivel = 1;
+}
+
+escolha nivel {
+    caso 1: imprimir("Cambio calmo.");
+    caso 2: imprimir("Cambio pressionado.");
+    padrao: imprimir("Indefinido.");
+}
