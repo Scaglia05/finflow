@@ -520,7 +520,28 @@ python main.py --series                # series do BC
 python -m pytest testes -v             # testes
 \end{lstlisting}
 
-Na interface web (\texttt{http://127.0.0.1:8000}), escolhe-se um exemplo ou escreve-se um programa, executa-se com o botão ou Ctrl+Enter e inspecionam-se tokens, árvore, tipos, consultas ao Banco Central e variáveis finais.
+Na interface web (\texttt{http://127.0.0.1:8000}), escolhe-se um exemplo ou escreve-se um programa, executa-se com o botão ou Ctrl+Enter e inspecionam-se tokens, árvore, tipos, consultas ao Banco Central e variáveis finais. A Figura~\ref{fig:resultado} mostra a tela com o programa de empréstimo escrito no editor, o resultado impresso e as cinco etapas do processamento (léxica, sintática, semântica, Banco Central e execução), cada uma com o tempo gasto e o estado; a etapa do Banco Central aparece como ``não usado'' porque o programa não chama \texttt{buscar}. A Figura~\ref{fig:arvore} mostra a etapa sintática expandida, com a árvore do programa, e a tabela de variáveis finais com tipo e valor. A Figura~\ref{fig:erro} mostra a rejeição de \texttt{moeda + percentual} na etapa semântica, com a linha e a causa.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figuras/interface_resultado.jpg}
+\caption{Interface web: programa no editor, resultado e etapas do processamento.}
+\label{fig:resultado}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figuras/interface_arvore.jpg}
+\caption{Etapa sintática (árvore do programa) e variáveis finais com tipo e valor.}
+\label{fig:arvore}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figuras/interface_erro.jpg}
+\caption{Erro de tipo detectado na análise semântica (\texttt{erro\_tipo.ff}).}
+\label{fig:erro}
+\end{figure}
 
 \subsection{Como escrever um programa}
 
