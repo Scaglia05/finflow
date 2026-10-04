@@ -125,7 +125,7 @@ FINFLOW_LIVE=1 pytest testes/ -v       # inclui teste contra a API real (Windows
 │   └── bcb.py          # integração com a API do Banco Central
 ├── exemplos/           # programas .ff (rendimento, inflacao_por_ano, cambio, ...)
 ├── testes/             # suíte de testes (pytest)
-├── Docs/               # artigo e materiais da disciplina
+├── Docs/               # artigo científico (artigo_finflow.tex e .pdf)
 ├── main.py             # abre a interface web (ou roda um .ff / todos no terminal)
 ├── playground.py       # servidor da interface web
 ├── web/index.html      # interface (logo, editor, passo a passo)
