@@ -11,6 +11,13 @@ env/
 # Testes
 .pytest_cache/
 
+# LaTeX (arquivos auxiliares do artigo)
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+
 # Parser/lexer generated tables (PLY)
 parser.out
 parsetab.py
