@@ -127,7 +127,6 @@ FINFLOW_LIVE=1 pytest testes/ -v       # inclui teste contra a API real (Windows
 ├── testes/             # suíte de testes (pytest)
 ├── Docs/               # artigo científico (artigo_finflow.tex e .pdf)
 │   ├── fig/            # figuras do artigo (arquitetura, AFD, AST, execução, benchmark)
-│   ├── figuras/        # capturas de tela da interface web
 │   └── referencia/     # roteiro do trabalho (enunciado da disciplina)
 ├── main.py             # abre a interface web (ou roda um .ff / todos no terminal)
 ├── playground.py       # servidor da interface web
