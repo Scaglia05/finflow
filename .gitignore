@@ -5,23 +5,17 @@ __pycache__/
 venv/
 env/
 
-# Jupyter
-.ipynb_checkpoints/
-
 # Testes
 .pytest_cache/
 
-# LaTeX (arquivos auxiliares do artigo)
-*.aux
-*.log
-*.out
-*.toc
-*.synctex.gz
-
-# Parser/lexer generated tables (PLY)
+# Tabelas geradas pelo PLY
 parser.out
 parsetab.py
 
-# OS
+# Sistema operacional
 .DS_Store
 Thumbs.db
+
+# Docs: somente o PDF final do artigo e versionado
+Docs/*
+!Docs/artigo_finflow.pdf
