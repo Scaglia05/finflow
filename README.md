@@ -2,6 +2,7 @@
 
 Linguagem de domínio específico (DSL) para modelagem de operações financeiras, com tipagem de grandezas e acesso a dados reais do Banco Central do Brasil.
 
+[![CI](https://github.com/Scaglia05/finflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Scaglia05/finflow/actions/workflows/ci.yml)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Parser LALR(1)](https://img.shields.io/badge/parser-LALR(1)-informational)
 
@@ -42,6 +43,8 @@ Trabalho prático final da disciplina de Teoria da Computação e Compiladores, 
 ## Funcionalidades
 
 - Tipos `moeda`, `percentual`, `inteiro` e `texto`, com regras explícitas de composição.
+- Aritmética decimal exata (`decimal.Decimal`) com arredondamento financeiro (meio para cima): `0.10 + 0.20` é exatamente `0.30`.
+- Escopo de blocos: variáveis declaradas dentro de `se`, `para` e `escolha` deixam de existir ao fim do bloco.
 - Comandos de declaração, atribuição, condicional (`se`/`senao`), repetição (`para`), seleção (`escolha`) e saída (`imprimir`).
 - Operadores aritméticos, de comparação e lógicos (`e`, `ou`, `nao`), com avaliação em curto-circuito.
 - Acesso a oito séries do Banco Central por meio de `buscar`.
@@ -199,6 +202,22 @@ Da menor para a maior precedência: `ou`, `e`, `nao`, comparações (`==`, `!=`,
 
 Para aplicar uma taxa a um valor, utilize `valor + valor * taxa`. A divisão entre dois `inteiro` é inteira; a divisão por zero provoca erro de execução. Condições de `se` e operandos de `e`, `ou` e `nao` devem ser comparações ou expressões lógicas.
 
+Em declarações e atribuições, o valor deve ter o tipo da variável, com uma única exceção: um `inteiro` pode ser atribuído a `moeda` (`moeda m = 5;` vale `R$ 5.00`). O contrário é rejeitado, para não truncar centavos (`inteiro n = 10.50;` é erro), e um `inteiro` não vira `percentual` (`percentual p = 5;` é erro; use `5%`).
+
+### Escopo
+
+Variáveis declaradas no nível do programa são globais e visíveis em todos os blocos. Variáveis declaradas dentro de um bloco (`se`, `senao`, `para`, `caso`, `padrao`) existem apenas até o fim dele, e a variável de controle do `para` existe apenas no laço; usá-las depois é erro de escopo. Não há sombreamento: declarar, em um bloco interno, um nome já visível é erro. Um mesmo nome pode ser reutilizado em blocos distintos, desde que com o mesmo tipo.
+
+```
+inteiro soma = 0;
+para i = 1 ate 3 faca {
+    inteiro dobro = i * 2;   # existe apenas dentro do laço
+    soma = soma + dobro;
+}
+imprimir(soma);              # 12
+imprimir(i);                 # erro: variavel 'i' fora do escopo
+```
+
 ### Dados do Banco Central
 
 A expressão `buscar("serie", ano)` retorna o valor da série no ano indicado. O ano pode ser uma variável, inclusive a de um laço `para`.
@@ -222,6 +241,9 @@ Séries mensais são agregadas por composição: `acumulado = produto(1 + taxa_m
 |---|---|---|
 | `juros.ff` | Aplica uma taxa de 5% sobre R$ 1.000,00 e informa se o saldo cresceu. | Não |
 | `para_escolha.ff` | Soma os inteiros de 1 a 5 com um laço e classifica uma categoria com `escolha`. | Não |
+| `juros_comp.ff` | Aplica 1% ao mês durante 12 meses sobre R$ 1.000,00 com um laço `para` e testa uma meta. | Não |
+| `categoria_desp.ff` | Associa uma categoria de despesa a um limite com `escolha` e compara o gasto ao limite. | Não |
+| `meta_poupanca.ff` | Simula aportes mensais de R$ 250,00 com rendimento de 2% ao mês durante seis meses e verifica uma meta. | Não |
 | `erro_tipo.ff` | Soma `moeda` com `percentual`; é rejeitado de propósito para demonstrar a análise semântica. | Não |
 | `rendimento.ff` | Compara R$ 10.000,00 aplicados em 2025 na Selic e na poupança, calcula o ganho real da Selic descontada a inflação (IPCA) e informa qual opção foi melhor. | Sim |
 | `inflacao_por_ano.ff` | Busca o IPCA de cada ano de 2020 a 2025 e calcula o poder de compra atual de R$ 1.000,00. | Sim |
@@ -272,7 +294,9 @@ Série desconhecida e tipo incompatível em `buscar` são detectados na análise
 python -m pytest testes -v
 ```
 
-A suíte possui 31 testes: 30 executam sem acesso à rede (a requisição HTTP é substituída por dados fixos) e 1 é um teste ao vivo, desativado por padrão. Para incluí-lo:
+A suíte possui 111 testes: 110 executam sem acesso à rede (a requisição HTTP é substituída por dados fixos) e 1 é um teste ao vivo, desativado por padrão. Eles cobrem o léxico, o parser (inclusive erros), a análise semântica (tipos, coerção e escopo), a aritmética decimal, o interpretador, a camada do Banco Central (códigos HTTP, tentativas, cache e respostas malformadas), a linha de comando e o servidor web. A cobertura medida é de 99% (linhas e ramos); os ramos restantes são defesas inalcançáveis.
+
+Para incluir o teste ao vivo:
 
 ```bash
 # Linux ou macOS
@@ -281,6 +305,24 @@ FINFLOW_LIVE=1 python -m pytest testes -v
 # Windows (PowerShell)
 $env:FINFLOW_LIVE=1; python -m pytest testes -v
 ```
+
+Para medir a cobertura:
+
+```bash
+pip install coverage
+python -m coverage run --branch --source=finflow,playground,main -m pytest testes
+python -m coverage report -m
+```
+
+### Reprodução dos experimentos do artigo
+
+O script `tools/experimentos.py` regenera os números do artigo a partir da implementação atual: regras de produção numeradas, efeito da tabela de precedência (conflitos e árvores), traço do parser, caracterização dos exemplos e desempenho por fase.
+
+```bash
+python tools/experimentos.py tudo
+```
+
+Os tempos dependem da máquina; os demais valores são determinísticos.
 
 ## Estrutura do projeto
 
@@ -294,6 +336,8 @@ $env:FINFLOW_LIVE=1; python -m pytest testes -v
 │   └── bcb.py            # integração com a API do Banco Central
 ├── exemplos/             # programas .ff
 ├── testes/               # testes automatizados (pytest)
+├── tools/
+│   └── experimentos.py   # reproduz os experimentos do artigo
 ├── web/index.html        # interface web
 ├── Docs/
 │   └── artigo_finflow.pdf   # artigo científico (versão final)
@@ -304,9 +348,8 @@ $env:FINFLOW_LIVE=1; python -m pytest testes -v
 
 ## Limitações conhecidas
 
-- Há um único escopo de variáveis por programa: variáveis declaradas dentro de um bloco permanecem visíveis após o bloco, inclusive a variável de controle de `para`.
-- A coerção entre `inteiro` e `moeda`/`percentual` também vale para declarações e atribuições; por exemplo, `inteiro n = 10.50;` é aceito.
-- Valores monetários são números de ponto flutuante, adequados para fins didáticos e de estimativa, mas não para contabilidade.
+- Um mesmo nome só pode ser reutilizado em blocos distintos com o mesmo tipo, pois o tipo de cada nome é registrado uma única vez para a formatação da saída.
+- Não há conversão explícita entre tipos (por exemplo, de `moeda` para `inteiro`) nem sombreamento de variáveis.
 - A sintaxe não inclui sinal unário (`-5`), listas, funções definidas pelo usuário nem sequências de escape em textos. O `senao` exige bloco entre chaves, e `texto` não participa de aritmética.
 - Programas com `buscar` dependem da disponibilidade da API do Banco Central. No ano corrente, o período é limitado à data atual, e as séries de cotação retornam apenas a última cotação.
 - A interface web destina-se ao uso local, sem autenticação.

@@ -24,6 +24,7 @@ from finflow.lexer import lexer
 RAIZ = os.path.dirname(os.path.abspath(__file__))
 ERROS = (SyntaxError, ErroSemantico, ErroExecucao, ErroBCB)
 _trava = threading.Lock()  # lexer e parser do PLY sao globais
+MAX_CORPO = 1_000_000      # bytes aceitos em POST /run
 
 
 def carregar_exemplos():
@@ -37,7 +38,7 @@ def carregar_exemplos():
 def listar_tokens(codigo):
     lexer.lineno = 1
     lexer.input(codigo)
-    return [{"tipo": t.type, "valor": t.value, "linha": t.lineno} for t in iter(lexer.token, None)]
+    return [{"tipo": t.type, "valor": str(t.value), "linha": t.lineno} for t in iter(lexer.token, None)]
 
 
 def _no(x, nivel, saida):
@@ -121,12 +122,23 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path != "/run":
             return self._enviar(404, "text/plain", "nao encontrado")
-        tamanho = int(self.headers.get("Content-Length", 0))
+        invalida = json.dumps({"erro": {"mensagem": "requisicao invalida"}})
+        try:
+            tamanho = int(self.headers.get("Content-Length", 0))
+        except ValueError:
+            return self._enviar(400, "application/json", invalida)
+        if tamanho < 0:
+            return self._enviar(400, "application/json", invalida)
+        if tamanho > MAX_CORPO:
+            return self._enviar(413, "application/json",
+                                json.dumps({"erro": {"mensagem": "programa grande demais"}}))
         try:
             codigo = json.loads(self.rfile.read(tamanho))["codigo"]
-        except (ValueError, KeyError):
-            return self._enviar(400, "application/json", json.dumps({"erro": {"mensagem": "requisicao invalida"}}))
-        self._enviar(200, "application/json", json.dumps(rodar(codigo)))
+        except (ValueError, KeyError, TypeError):
+            return self._enviar(400, "application/json", invalida)
+        if not isinstance(codigo, str):
+            return self._enviar(400, "application/json", invalida)
+        self._enviar(200, "application/json", json.dumps(rodar(codigo), default=str))
 
     def log_message(self, *args):
         pass

@@ -1,0 +1,12 @@
+inteiro categoria = 2;
+moeda gasto = 350.00;
+moeda limite = 0.00;
+escolha categoria {
+    caso 1: limite = 200.00;
+    caso 2: limite = 300.00;
+    padrao: limite = 100.00;
+}
+se gasto > limite entao {
+    imprimir("acima do limite");
+} senao { imprimir("dentro do limite"); }
+imprimir(limite);
