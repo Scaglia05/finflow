@@ -2,6 +2,7 @@
 
 Linguagem de domínio específico (DSL) para modelagem de operações financeiras, com tipagem de grandezas e acesso a dados reais do Banco Central do Brasil.
 
+[![CI](https://github.com/Scaglia05/finflow/actions/workflows/ci.yml/badge.svg)](https://github.com/Scaglia05/finflow/actions/workflows/ci.yml)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Parser LALR(1)](https://img.shields.io/badge/parser-LALR(1)-informational)
 
