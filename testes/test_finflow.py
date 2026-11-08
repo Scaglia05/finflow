@@ -4,6 +4,7 @@ Testes da FinFlow. Rodar com: pytest testes/ -v
 """
 import sys
 import os
+from decimal import Decimal
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -39,7 +40,7 @@ def test_juros_e_precedencia_correta():
         percentual taxa = 5%;
         moeda saldo_final = saldo + saldo * taxa;
     ''', imprimir_saida=False)
-    assert abs(ambiente['saldo_final'] - 1050.0) < 1e-9
+    assert ambiente['saldo_final'] == Decimal('1050')
 
 
 def test_precedencia_soma_mult():
@@ -98,7 +99,7 @@ def test_dados_externos_pre_populados():
         },
         imprimir_saida=False,
     )
-    assert abs(ambiente['total'] - 1150.0) < 1e-9
+    assert ambiente['total'] == Decimal('1150')
 
 
 if __name__ == "__main__":

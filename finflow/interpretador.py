@@ -1,19 +1,37 @@
 """
 Interpretador (tree-walking) da FinFlow: executa a AST de fato.
+
+Valores `moeda` e `percentual` são `decimal.Decimal`, o que evita os erros de
+representação binária do ponto flutuante (0.1 + 0.2 vale exatamente 0.3). Na
+saída, arredonda-se a duas casas com ROUND_HALF_UP, a convenção financeira.
 """
+from decimal import Decimal, ROUND_HALF_UP
 
 
 class ErroExecucao(RuntimeError):
     pass
 
 
+def converter(valor, tipo):
+    """Normaliza `valor` para a representação interna do tipo FinFlow."""
+    if tipo in ('moeda', 'percentual') and not isinstance(valor, (Decimal, bool)):
+        if isinstance(valor, (int, float)):
+            return Decimal(str(valor))
+    return valor
+
+
+def _duas_casas(valor):
+    decimal = valor if isinstance(valor, Decimal) else Decimal(str(valor))
+    return decimal.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
 def formatar(valor, tipo):
     if tipo == 'booleano':
         return "verdadeiro" if valor else "falso"
     if tipo == 'moeda':
-        return f"R$ {valor:.2f}"
+        return f"R$ {_duas_casas(valor)}"
     if tipo == 'percentual':
-        return f"{valor * 100:.2f}%"
+        return f"{_duas_casas(converter(valor, 'percentual') * 100)}%"
     return str(valor)
 
 
@@ -55,10 +73,10 @@ def executar_comando(cmd, ambiente, tabela, saida):
     tag = cmd[0]
     if tag == 'declaracao':
         _, tipo_decl, nome, expr, _ = cmd
-        ambiente[nome] = avaliar(expr, ambiente, tabela)
+        ambiente[nome] = converter(avaliar(expr, ambiente, tabela), tipo_decl)
     elif tag == 'atribuicao':
         _, nome, expr, _ = cmd
-        ambiente[nome] = avaliar(expr, ambiente, tabela)
+        ambiente[nome] = converter(avaliar(expr, ambiente, tabela), tabela[nome][0])
     elif tag == 'se':
         _, cond, bloco_then, bloco_else, _ = cmd
         if avaliar(cond, ambiente, tabela):
@@ -110,7 +128,8 @@ def executar(ast, tabela, ambiente_inicial=None):
     variaveis ja populadas antes da execucao comecar (usado junto com
     `tabela_inicial` de `analisar_semantica`, ver finflow.semantica).
     """
-    ambiente = dict(ambiente_inicial) if ambiente_inicial else {}
+    ambiente = {nome: converter(valor, tabela[nome][0] if nome in tabela else None)
+                for nome, valor in (ambiente_inicial or {}).items()}
     saida = []
     _, comandos = ast
     for cmd in comandos:
