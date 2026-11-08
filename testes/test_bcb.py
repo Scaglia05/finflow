@@ -6,6 +6,7 @@ FINFLOW_LIVE=1. Rodar com: pytest testes/ -v
 import datetime as dt
 import os
 import sys
+from decimal import Decimal
 
 import pytest
 
@@ -74,9 +75,9 @@ def test_buscar_na_linguagem_percentual_e_moeda():
         moeda dolar = buscar("dolar", 2025);
         percentual meta = buscar("meta_selic", 2025);
     ''', imprimir_saida=False)
-    assert amb['ipca'] == pytest.approx(1.005 ** 2 - 1)
-    assert amb['dolar'] == 5.5          # ultimo valor do periodo
-    assert amb['meta'] == pytest.approx(0.15)
+    assert amb['ipca'] == Decimal('1.005') ** 2 - 1
+    assert amb['dolar'] == Decimal('5.5')   # ultimo valor do periodo
+    assert amb['meta'] == Decimal('0.15')
 
 
 def test_buscar_com_ano_vindo_de_variavel_e_para():
@@ -134,7 +135,7 @@ def test_razao_entre_moedas_e_percentual():
         moeda a = 1100.00; moeda b = 1000.00;
         percentual ganho = (a - b) / b;
     ''', imprimir_saida=False)
-    assert amb['ganho'] == pytest.approx(0.1)
+    assert amb['ganho'] == Decimal('0.1')
 
 
 def test_moeda_vezes_moeda_e_erro_de_tipo():

@@ -8,6 +8,7 @@ uma tabela hash dentro de t_ID, em vez de uma regra de regex por palavra
 """
 import sys
 import os
+from decimal import Decimal
 from ply.lex import lex
 
 reserved = {
@@ -29,13 +30,13 @@ tokens = [
 
 def t_CTE_PERCENTUAL(t):
     r'\d+(\.\d+)?%'
-    t.value = float(t.value[:-1]) / 100
+    t.value = Decimal(t.value[:-1]) / 100
     return t
 
 
 def t_CTE_FLOAT(t):
     r'\d+\.\d+'
-    t.value = float(t.value)
+    t.value = Decimal(t.value)
     return t
 
 

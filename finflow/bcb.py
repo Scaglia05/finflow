@@ -9,6 +9,7 @@ rede so e acessada em tempo de execucao, pelo comando `buscar(...)`.
 import datetime as dt
 import time
 from dataclasses import dataclass
+from decimal import Decimal
 from functools import lru_cache
 
 URL_SGS = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados"
@@ -124,10 +125,11 @@ def limpar_cache():
     _valores.cache_clear()
 
 
-def _acumular(valores) -> float:
-    acumulado = 1.0
+def _acumular(valores) -> Decimal:
+    """Produto composto de (1 + taxa/100) menos 1, em decimal exato."""
+    acumulado = Decimal(1)
     for _, v in valores:
-        acumulado *= 1 + v / 100
+        acumulado *= 1 + Decimal(str(v)) / 100
     return acumulado - 1
 
 
@@ -141,7 +143,7 @@ def buscar_serie_bc(codigo_serie: int, data_inicial: str, data_final: str) -> fl
     valores = buscar_valores(codigo_serie, data_inicial, data_final)
     if not valores:
         raise ErroBCB(f"a API nao retornou dados da serie {codigo_serie} entre {data_inicial} e {data_final}")
-    return _acumular(valores)
+    return float(_acumular(valores))
 
 
 def valor_serie(nome: str, ano_inicial: int, ano_final: int | None = None) -> float:
@@ -164,9 +166,9 @@ def valor_serie(nome: str, ano_inicial: int, ano_final: int | None = None) -> fl
     if serie.modo == 'acumulado':
         resultado = _acumular(valores)
     else:
-        ultimo = valores[-1][1]
+        ultimo = Decimal(str(valores[-1][1]))
         resultado = ultimo / 100 if serie.tipo == 'percentual' else ultimo
     _emitir(tipo='serie', serie=nome, codigo=serie.codigo, modo=serie.modo, tipo_finflow=serie.tipo,
-            periodo=f"{_fmt(ini)} a {_fmt(fim)}", valores=len(valores), resultado=resultado,
+            periodo=f"{_fmt(ini)} a {_fmt(fim)}", valores=len(valores), resultado=float(resultado),
             cache=_valores.cache_info().hits > acertos)
     return resultado
