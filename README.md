@@ -5,6 +5,8 @@ Linguagem de domínio específico (DSL) para modelagem de operações financeira
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Parser LALR(1)](https://img.shields.io/badge/parser-LALR(1)-informational)
 
+[![Ler o artigo (PDF)](https://img.shields.io/badge/Artigo-ler_o_PDF-B31B1B?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](Docs/artigo_finflow.pdf)
+
 ## Sumário
 
 - [Sobre o projeto](#sobre-o-projeto)
@@ -293,9 +295,8 @@ $env:FINFLOW_LIVE=1; python -m pytest testes -v
 ├── exemplos/             # programas .ff
 ├── testes/               # testes automatizados (pytest)
 ├── web/index.html        # interface web
-├── Docs/                 # artigo científico
-│   ├── fig/              # figuras do artigo
-│   └── referencia/       # roteiro do trabalho
+├── Docs/
+│   └── artigo_finflow.pdf   # artigo científico (versão final)
 ├── main.py               # interface web e linha de comando
 ├── playground.py         # servidor da interface web
 └── requirements.txt
@@ -321,7 +322,11 @@ $env:FINFLOW_LIVE=1; python -m pytest testes -v
 
 ## Documentação
 
-O artigo científico que descreve o projeto está em [`Docs/artigo_finflow.pdf`](Docs/artigo_finflow.pdf), com o código-fonte LaTeX em [`Docs/artigo_finflow.tex`](Docs/artigo_finflow.tex). Ele contém a fundamentação teórica, a especificação formal da linguagem, a implementação e os resultados.
+O artigo científico que descreve o projeto está disponível em PDF:
+
+[![Ler o artigo (PDF)](https://img.shields.io/badge/Artigo-ler_o_PDF-B31B1B?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](Docs/artigo_finflow.pdf)
+
+Ele contém a fundamentação teórica, a especificação formal da linguagem, a implementação e os resultados.
 
 ## Autores
 
