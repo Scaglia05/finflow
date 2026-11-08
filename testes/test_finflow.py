@@ -75,6 +75,15 @@ def test_erro_redeclaracao():
         pass
 
 
+def test_erro_multiplicar_texto():
+    for codigo in ('texto a = "x"; texto b = a * a;', 'texto a = "x"; texto b = a / a;'):
+        try:
+            rodar_finflow(codigo, imprimir_saida=False)
+            assert False, "deveria ter lancado ErroSemantico"
+        except ErroSemantico:
+            pass
+
+
 def test_dados_externos_pre_populados():
     """Simula uma variavel vinda de fora (ex: API do Banco Central)."""
     ambiente = rodar_finflow(

@@ -478,10 +478,10 @@ A Tabela~\ref{tab:exemplos} caracteriza os seis programas distribuídos com o pr
 
 \subsection{Suíte de Testes}
 
-A suíte \texttt{pytest} possui 9 testes, todos aprovados (Tabela~\ref{tab:testes}). Eles cobrem laço, seleção, juros com precedência, aritmética inteira, quatro erros semânticos e a injeção de variáveis externas. O teste de precedência verifica que \texttt{2 + 3 * 4} resulta em 14 e não em 20, o que traduz em verificação automática o achado da Seção~\ref{sec:precexp}. O nono teste nasceu de um defeito encontrado durante a redação: a regra de multiplicação aceitava dois operandos de mesmo tipo, inclusive \texttt{texto}, de modo que \texttt{texto * texto} passava na análise semântica e só falhava na execução, com uma exceção do próprio Python. A correção restringiu a regra a tipos numéricos, restaurando a invariante de que todo programa que passa pela análise executa sem erro de tipo. O episódio ilustra, na prática, o papel da análise estática e a necessidade de testar a própria checagem de tipos.
+A suíte \texttt{pytest} do compilador (\texttt{testes/test\_finflow.py}) possui 9 testes, todos aprovados (Tabela~\ref{tab:testes}). Os testes das camadas de integração e de interface (\texttt{test\_bcb.py} e \texttt{test\_playground.py}, 22 testes) completam o repositório: no total são 31 testes, dos quais 30 executam sem acesso à rede e 1 é um teste ao vivo opcional, habilitado por \texttt{FINFLOW\_LIVE=1}. Os 9 testes do compilador cobrem laço, seleção, juros com precedência, aritmética inteira, quatro erros semânticos e a injeção de variáveis externas. O teste de precedência verifica que \texttt{2 + 3 * 4} resulta em 14 e não em 20, o que traduz em verificação automática o achado da Seção~\ref{sec:precexp}. O nono teste nasceu de um defeito encontrado durante a redação: a regra de multiplicação aceitava dois operandos de mesmo tipo, inclusive \texttt{texto}, de modo que \texttt{texto * texto} passava na análise semântica e só falhava na execução, com uma exceção do próprio Python. A correção restringiu a regra a tipos numéricos, restaurando a invariante de que todo programa que passa pela análise executa sem erro de tipo. O episódio ilustra, na prática, o papel da análise estática e a necessidade de testar a própria checagem de tipos.
 
 \begin{table}[!htbp]
-\caption{Casos de Teste Automatizados (9/9 aprovados)}
+\caption{Testes Automatizados do Compilador (9/9 aprovados)}
 \label{tab:testes}
 \centering
 \footnotesize
