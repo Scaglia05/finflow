@@ -1,0 +1,7 @@
+moeda saldo = 1000.00;
+percentual taxa = 1%;
+para mes = 1 ate 12 faca {
+    saldo = saldo + saldo * taxa;
+}
+imprimir(saldo);
+se saldo > 1100 entao { imprimir("meta atingida"); }

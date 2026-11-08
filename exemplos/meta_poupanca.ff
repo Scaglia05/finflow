@@ -1,0 +1,13 @@
+moeda poupado = 0.00;
+moeda aporte = 250.00;
+percentual rendimento = 2%;
+inteiro meses = 0;
+para m = 1 ate 6 faca {
+    poupado = poupado + aporte;
+    poupado = poupado + poupado * rendimento;
+    meses = meses + 1;
+}
+imprimir(meses);  imprimir(poupado);
+se poupado > 1500 entao {
+    imprimir("meta de 1500 atingida");
+} senao { imprimir("meta nao atingida"); }
