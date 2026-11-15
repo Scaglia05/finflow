@@ -233,7 +233,7 @@ A expressão `buscar("serie", ano)` retorna o valor da série no ano indicado. O
 | `dolar` | `moeda` | Última cotação de venda do dólar no período | 1 |
 | `euro` | `moeda` | Última cotação de venda do euro no período | 21619 |
 
-Séries mensais são agregadas por composição: `acumulado = produto(1 + taxa_mes) - 1`. A série 432 do SGS é a meta da Selic, e não a Selic mensal; por isso `selic` utiliza a série 4390. Consultas com mais de 10 anos são divididas em janelas, conforme o limite da API. As requisições têm tempo limite de 30 segundos, até 3 tentativas e cache durante a execução.
+Séries mensais são agregadas por composição: `acumulado = produto(1 + taxa_mes) - 1`. A série 432 do SGS é a meta da Selic, e não a Selic mensal; por isso `selic` utiliza a série 4390. Consultas com mais de 10 anos são divididas em janelas, conforme o limite da API para séries diárias (acima disso, a API responde HTTP 406). As requisições têm tempo limite de 30 segundos, até 3 tentativas e cache durante a execução. Falhas de conexão, respostas HTTP 5xx e respostas que não são JSON (a API devolve, de forma intermitente, uma página HTML de rejeição com status 200) são tentadas de novo.
 
 ## Exemplos incluídos
 
@@ -294,7 +294,7 @@ Série desconhecida e tipo incompatível em `buscar` são detectados na análise
 python -m pytest testes -v
 ```
 
-A suíte possui 111 testes: 110 executam sem acesso à rede (a requisição HTTP é substituída por dados fixos) e 1 é um teste ao vivo, desativado por padrão. Eles cobrem o léxico, o parser (inclusive erros), a análise semântica (tipos, coerção e escopo), a aritmética decimal, o interpretador, a camada do Banco Central (códigos HTTP, tentativas, cache e respostas malformadas), a linha de comando e o servidor web. A cobertura medida é de 99% (linhas e ramos); os ramos restantes são defesas inalcançáveis.
+A suíte possui 113 testes: 112 executam sem acesso à rede (a requisição HTTP é substituída por dados fixos) e 1 é um teste ao vivo, desativado por padrão. Eles cobrem o léxico, o parser (inclusive erros), a análise semântica (tipos, coerção e escopo), a aritmética decimal, o interpretador, a camada do Banco Central (códigos HTTP, tentativas, cache e respostas malformadas), a linha de comando e o servidor web. A cobertura medida é de 99% (linhas e ramos); os ramos restantes são defesas inalcançáveis.
 
 Para incluir o teste ao vivo:
 
@@ -322,7 +322,11 @@ O script `tools/experimentos.py` regenera os números do artigo a partir da impl
 python tools/experimentos.py tudo
 ```
 
-Os tempos dependem da máquina; os demais valores são determinísticos.
+Os tempos dependem da máquina; os demais valores são determinísticos. O subcomando `rede`, que exige internet e não faz parte de `tudo`, consulta a API real do Banco Central (valores por série, conferência do IPCA, janelas e latência):
+
+```bash
+python tools/experimentos.py rede
+```
 
 ## Estrutura do projeto
 
