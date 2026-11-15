@@ -87,10 +87,24 @@ def test_codigo_inesperado_e_recusa_imediata(monkeypatch):
     assert len(chamadas) == 1
 
 
-def test_json_malformado_vira_erro_bcb(monkeypatch):
-    usar_respostas(monkeypatch, [Resposta(200, json_invalido=True)])
+def test_conteudo_que_nao_e_json_e_repetido_e_depois_vira_erro_bcb(monkeypatch):
+    chamadas = usar_respostas(monkeypatch, [Resposta(200, json_invalido=True)])
+    with pytest.raises(ErroBCB, match="nao e JSON"):
+        bcb.buscar_valores(433, "01/01/2025", "31/03/2025")
+    assert len(chamadas) == bcb.TENTATIVAS
+
+
+def test_conteudo_que_nao_e_json_e_recuperado_na_nova_tentativa(monkeypatch):
+    chamadas = usar_respostas(monkeypatch, [Resposta(200, json_invalido=True), Resposta(200, DADOS)])
+    assert len(bcb.buscar_valores(433, "01/01/2025", "31/03/2025")) == 2
+    assert len(chamadas) == 2
+
+
+def test_valor_nao_numerico_vira_erro_bcb_sem_repeticao(monkeypatch):
+    chamadas = usar_respostas(monkeypatch, [Resposta(200, [{"data": "01/01/2025", "valor": "abc"}])])
     with pytest.raises(ErroBCB, match="inesperada"):
         bcb.buscar_valores(433, "01/01/2025", "31/03/2025")
+    assert len(chamadas) == 1
 
 
 def test_resposta_sem_campos_esperados_vira_erro_bcb(monkeypatch):

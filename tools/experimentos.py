@@ -8,8 +8,9 @@ Uso (a partir da raiz do repositorio):
     python tools/experimentos.py traco         # traco do parser LALR(1) para r = a + b * c;
     python tools/experimentos.py exemplos      # linhas, tokens, nos da AST e tempos dos exemplos
     python tools/experimentos.py benchmark     # tempo por fase em funcao do tamanho do programa
-    python tools/experimentos.py tudo
-Os tempos dependem da maquina; os demais numeros sao deterministicos.
+    python tools/experimentos.py tudo          # todos os acima (nao inclui `rede`)
+    python tools/experimentos.py rede          # consulta o SGS de verdade (exige internet)
+Os tempos dependem da maquina e da rede; os demais numeros sao deterministicos.
 """
 import glob
 import io
@@ -202,15 +203,80 @@ def benchmark(tamanhos=(10, 20, 50, 100, 200, 400), repeticoes=15):
         print(f"{linhas},{n_tokens},{lex:.2f},{max(lex_parse - lex, 0):.2f},{sem:.2f},{exe:.2f}")
 
 
+# --- rede (exige internet) --------------------------------------------------
+
+def rede(ano=2025, pausa=0.5):
+    """Consulta o SGS de verdade: valores por serie, conferencia independente, janelas e latencia."""
+    import requests
+    from finflow import bcb
+
+    eventos = []
+    bcb.observador = eventos.append
+    bcb.limpar_cache()
+    print(f"Consultas ao SGS em {time.strftime('%Y-%m-%d')}, ano {ano}")
+    print("| Serie | SGS | Modo | Linhas | Consultas | Tempo (ms) | Valor |")
+    for nome, serie in bcb.SERIES.items():
+        eventos.clear()
+        t0 = time.perf_counter()
+        valor = bcb.valor_serie(nome, ano)
+        ms = round((time.perf_counter() - t0) * 1000)
+        resumo = next(e for e in eventos if e["tipo"] == "serie")
+        consultas = sum(1 for e in eventos if e["tipo"] == "consulta")
+        mostrado = f"{valor * 100:.2f}%" if serie.tipo == "percentual" else f"R$ {valor:.4f}"
+        print(f"| {nome} | {serie.codigo} | {serie.modo} | {resumo['valores']} | {consultas} | {ms} | {mostrado} |")
+        time.sleep(pausa)
+
+    # Conferencia independente: a serie 13522 do SGS e o IPCA acumulado em 12 meses, calculado pelo IBGE.
+    oficial = bcb.buscar_valores(13522, f"01/12/{ano}", f"31/12/{ano}")[0][1]
+    calculado = bcb.valor_serie("ipca", ano) * 100
+    print(f"\nConferencia do IPCA {ano}: composto pela FinFlow = {calculado:.4f}% ; serie 13522 (IBGE) = {oficial:.2f}%")
+
+    # Janelas: uma serie diaria de 16 anos exige mais de uma consulta (limite de 10 anos).
+    eventos.clear()
+    t0 = time.perf_counter()
+    bcb.valor_serie("dolar", ano - 15, ano)
+    ms = round((time.perf_counter() - t0) * 1000)
+    consultas = [e["linhas"] for e in eventos if e["tipo"] == "consulta"]
+    print(f"Janelas: dolar {ano - 15}-{ano} = {sum(consultas)} linhas em {len(consultas)} consultas {consultas}, {ms} ms")
+
+    # Limite de 10 anos em series diarias, pedido sem dividir a janela.
+    time.sleep(pausa)
+    resp = requests.get(bcb.URL_SGS.format(codigo=1),
+                        params={"formato": "json", "dataInicial": f"01/01/{ano - 10}", "dataFinal": f"31/12/{ano}"},
+                        timeout=bcb.TIMEOUT_S)
+    print(f"Limite: dolar com 11 anos em uma so consulta -> HTTP {resp.status_code}")
+
+    # Cache e latencia.
+    bcb.limpar_cache()
+    frios = []
+    for _ in range(5):
+        bcb.limpar_cache()
+        t0 = time.perf_counter()
+        bcb.valor_serie("ipca", ano)
+        frios.append((time.perf_counter() - t0) * 1000)
+        time.sleep(pausa)
+    t0 = time.perf_counter()
+    bcb.valor_serie("ipca", ano)
+    quente = (time.perf_counter() - t0) * 1000
+    print(f"Latencia (ipca {ano}, 5 repeticoes sem cache): mediana {statistics.median(frios):.0f} ms, "
+          f"min {min(frios):.0f}, max {max(frios):.0f}; com cache: {quente:.3f} ms")
+    bcb.observador = None
+
+
 COMANDOS = {"regras": regras, "precedencia": precedencia, "traco": traco, "exemplos": exemplos,
             "benchmark": benchmark}
+COMANDOS_COM_REDE = {"rede": rede}  # fora de `tudo`: exigem internet
 
 
 def main():
     args = sys.argv[1:]
-    if len(args) != 1 or args[0] not in (*COMANDOS, "tudo"):
+    if len(args) != 1 or args[0] not in (*COMANDOS, *COMANDOS_COM_REDE, "tudo"):
         print(__doc__)
         sys.exit(1)
+    if args[0] in COMANDOS_COM_REDE:
+        print(f"\n== {args[0]} ==")
+        COMANDOS_COM_REDE[args[0]]()
+        return
     for nome in (COMANDOS if args[0] == "tudo" else [args[0]]):
         print(f"\n== {nome} ==")
         COMANDOS[nome]()

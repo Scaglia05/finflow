@@ -95,11 +95,17 @@ def _requisitar(codigo: int, ini: dt.date, fim: dt.date) -> list:
             else:
                 try:
                     linhas = resp.json()
-                    valores = [(l["data"], float(l["valor"])) for l in linhas if l.get("valor") not in (None, "")]
+                except ValueError:
+                    # Observado na API real: uma pagina HTML com status 200, de forma
+                    # intermitente. E tratada como falha transitoria (nova tentativa).
+                    ultimo_erro = "a API do Banco Central respondeu com conteudo que nao e JSON"
+                else:
+                    try:
+                        valores = [(l["data"], float(l["valor"])) for l in linhas if l.get("valor") not in (None, "")]
+                    except (ValueError, KeyError, TypeError):
+                        raise ErroBCB(f"resposta inesperada da API do Banco Central para a serie {codigo}") from None
                     _emitir(tipo='consulta', url=resp.url, ms=ms, linhas=len(valores))
                     return valores
-                except (ValueError, KeyError, TypeError):
-                    raise ErroBCB(f"resposta inesperada da API do Banco Central para a serie {codigo}") from None
         if tentativa < TENTATIVAS - 1:
             time.sleep(1 + tentativa)
     raise ErroBCB(f"falha ao consultar a serie {codigo}: {ultimo_erro}")
